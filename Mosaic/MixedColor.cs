@@ -2,37 +2,72 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Diagnostics;
 
 namespace Mosaic
 {
+    [DebuggerDisplay("Current: {Current}, Count: {Count}")]
     internal class MixedColor
     {
-        private List<Color> _colors = new List<Color>();
+        private readonly Dictionary<Color, int> _colors;
 
-        public MixedColor(Color color)
+        public MixedColor(Color color) : this(color, 1) { }
+
+        public MixedColor(Color color, int times)
         {
-            _colors.Add(color);
-            CalcBlend();
+            _colors = new Dictionary<Color, int>
+            {
+                [color] = times
+            };
+
+            Count = times;
+            Current = color;
         }
 
         public Color Current { get; private set; }
 
-        public int Count => _colors.Count();
+        public int Count { get; private set; }
 
-        public void Add(params MixedColor[] mixes)
+        public void Add(Color color)
         {
-            foreach (var mix in mixes)
-            {
-                _colors.AddRange(mix._colors);
-            }
-            CalcBlend();
+            IncreaseColor(color);
+            UpdateCurrent();
         }
 
-        private void CalcBlend()
+        public void Add(MixedColor mix)
         {
-            var r = Convert.ToByte(_colors.Average(item => 1m * item.R));
-            var g = Convert.ToByte(_colors.Average(item => 1m * item.G));
-            var b = Convert.ToByte(_colors.Average(item => 1m * item.B));
+            foreach (var pair in mix._colors)
+            {
+                IncreaseColor(pair.Key, pair.Value);
+            }
+            UpdateCurrent();
+        }
+
+        private void IncreaseColor(Color color, int times = 1)
+        {
+            if (_colors.ContainsKey(color))
+            {
+                _colors[color] += times;
+            }
+            else
+            {
+                _colors[color] = times;
+            }
+            Count += times;
+        }
+
+        private void UpdateCurrent()
+        {
+            if (_colors.Count == 1)
+            {
+                Current = _colors.Keys.Single();
+                return;
+            }
+
+            double total = _colors.Values.Sum();
+            var r = Convert.ToByte(_colors.Sum(item => item.Value * item.Key.R) / total);
+            var g = Convert.ToByte(_colors.Sum(item => item.Value * item.Key.G) / total);
+            var b = Convert.ToByte(_colors.Sum(item => item.Value * item.Key.B) / total);
 
             Current = Color.FromArgb(r, g, b);
         }

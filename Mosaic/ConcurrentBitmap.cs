@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Mosaic
 {
-    internal class ConcurrentBitmap
+    internal sealed class ConcurrentBitmap
     {
-        private int _stride;
-        private byte[] _rgbValues;
+        private Color[,] _pixels;
 
         public ConcurrentBitmap(string filename)
         {
@@ -23,15 +24,29 @@ namespace Mosaic
                 IntPtr ptr = bmpData.Scan0;
 
                 // Declare an array to hold the bytes of the bitmap.
-                _stride = bmpData.Stride;
-                var bytes = Math.Abs(_stride) * bmp.Height;
-                _rgbValues = new byte[bytes];
+                var stride = bmpData.Stride;
+                var bytes = Math.Abs(stride) * bmp.Height;
+                var rgbValues = new byte[bytes];
 
                 // Copy the RGB values into the array.
-                System.Runtime.InteropServices.Marshal.Copy(ptr, _rgbValues, 0, bytes);
+                System.Runtime.InteropServices.Marshal.Copy(ptr, rgbValues, 0, bytes);
 
                 // Unlock the bits.
                 bmp.UnlockBits(bmpData);
+
+                _pixels = new Color[Width, Height];
+                Parallel.For(0, Width, x =>
+                {
+                    for (int y = 0; y < Height; y++)
+                    {
+                        var pos = (y * stride) + (x * 3);
+                        var b = rgbValues[pos];
+                        var g = rgbValues[pos + 1];
+                        var r = rgbValues[pos + 2];
+
+                        _pixels[x, y] = Color.FromArgb(255, r, g, b);
+                    }
+                });
             }
         }
 
@@ -39,18 +54,6 @@ namespace Mosaic
 
         public int Height { get; private set; }
 
-        internal Color GetPixel(int x, int y)
-        {
-            int pos;
-            int r, g, b, a;
-
-            pos = (y * _stride) + (x * 3);
-
-            b = _rgbValues[pos];
-            g = _rgbValues[pos + 1];
-            r = _rgbValues[pos + 2];
-
-            return Color.FromArgb(255, r, g, b);
-        }
+        public Color GetPixel(int x, int y) => _pixels[x, y];
     }
 }

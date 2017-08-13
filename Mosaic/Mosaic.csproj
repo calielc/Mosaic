@@ -43,11 +43,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BotManager.cs" />
     <Compile Include="ConcurrentBitmap.cs" />
+    <Compile Include="ConcurrentBitmapCollection.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="MixedColor.cs" />
-    <Compile Include="MosaicBot.cs" />
-    <Compile Include="MosaicRobots.cs" />
+    <Compile Include="PixelBot.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
