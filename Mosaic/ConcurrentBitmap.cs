@@ -8,6 +8,8 @@ namespace Mosaic
     internal sealed class ConcurrentBitmap
     {
         private Color[,] _pixels;
+        private int _stride;
+        private byte[] _rgbValues;
 
         public ConcurrentBitmap(string filename)
         {
@@ -24,29 +26,15 @@ namespace Mosaic
                 IntPtr ptr = bmpData.Scan0;
 
                 // Declare an array to hold the bytes of the bitmap.
-                var stride = bmpData.Stride;
-                var bytes = Math.Abs(stride) * bmp.Height;
-                var rgbValues = new byte[bytes];
+                _stride = bmpData.Stride;
+                var bytes = Math.Abs(_stride) * bmp.Height;
+                _rgbValues = new byte[bytes];
 
                 // Copy the RGB values into the array.
-                System.Runtime.InteropServices.Marshal.Copy(ptr, rgbValues, 0, bytes);
+                System.Runtime.InteropServices.Marshal.Copy(ptr, _rgbValues, 0, bytes);
 
                 // Unlock the bits.
                 bmp.UnlockBits(bmpData);
-
-                _pixels = new Color[Width, Height];
-                Parallel.For(0, Width, x =>
-                {
-                    for (int y = 0; y < Height; y++)
-                    {
-                        var pos = (y * stride) + (x * 3);
-                        var b = rgbValues[pos];
-                        var g = rgbValues[pos + 1];
-                        var r = rgbValues[pos + 2];
-
-                        _pixels[x, y] = Color.FromArgb(255, r, g, b);
-                    }
-                });
             }
         }
 
@@ -54,6 +42,13 @@ namespace Mosaic
 
         public int Height { get; private set; }
 
-        public Color GetPixel(int x, int y) => _pixels[x, y];
+        public Color GetPixel(int x, int y) {
+            var pos = (y * _stride) + (x * 3);
+            var b = _rgbValues[pos];
+            var g = _rgbValues[pos + 1];
+            var r = _rgbValues[pos + 2];
+
+            return Color.FromArgb(255, r, g, b);
+        }
     }
 }
