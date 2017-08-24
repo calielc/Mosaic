@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ImageMagick;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -18,6 +19,7 @@ namespace Mosaic
 
         public bool UseParallel { get; set; }
         public bool Heatmap { get; set; }
+        public bool AnimatedGif { get; set; }
 
         public int Width => _images?.Width ?? 0;
         public int Height => _images?.Height ?? 0;
@@ -47,7 +49,7 @@ namespace Mosaic
             var filenames = System.IO.Directory.GetFiles(SearchDirectory, SearchPattern);
             _images = new ConcurrentBitmapCollection(filenames);
 
-            SendText($"Loaded {_images.Count} files.");
+            SendText($"Loaded {_images.Count:#,##0} files.");
             SendText($"Dimensions: {Width} x {Height}.");
 
             _baseFile = filenames.First();
@@ -72,7 +74,7 @@ namespace Mosaic
             }
             _bots = Execute().ToArray();
 
-            SendText($"Created {_bots.Count} bots.");
+            SendText($"Created {_bots.Count:#,##0} bots.");
         }
 
         private IEnumerable<PixelBot> GetNeighbours(PixelBot source) => _bots
@@ -105,20 +107,6 @@ namespace Mosaic
             }
             ForEach(_bots, Execute);
 
-            if (Heatmap)
-            {
-                using (var bmp = new Bitmap(_baseFile))
-                {
-                    foreach (var bot in _bots)
-                    {
-                        var color = Extensions.Interpolate(Color.Red, Color.Green, bot.Chance);
-                        bmp.SetPixel(bot.X, bot.Y, color);
-                    }
-
-                    bmp.Save(Path.Combine(DestinyDirectory, $"{DestinyFilename}-heat.jpg"));
-                };
-            }
-
             SendProgress(index / total);
             SendText("Done");
         }
@@ -142,45 +130,94 @@ namespace Mosaic
         internal void SaveToFile()
         {
             SendText("Saving colors...");
-            double total = _bots.Count();
 
-            var step = 1d;
-
-            var index = 0;
-            void Execute(Bitmap bmp, PixelBot bot)
+            if (Heatmap)
             {
-                if (bot.Chance < step)
-                {
-                    var filename = Path.Combine(DestinyDirectory, $"{DestinyFilename}-{step:0.00}.jpg");
-                    bmp.Save(filename);
+                CreateHeatMap();
+            }
 
-                    step -= 0.05d;
-                }
-
-                bot.Save(bmp);
-
-                index++;
-                if (index % 750 == 0)
-                {
-                    SendProgress(index / total);
-                }
+            if (AnimatedGif)
+            {
+                CreateAnimatedGif();
             }
 
             using (var bmp = new Bitmap(_baseFile))
             {
-                bmp.Save(Path.Combine(DestinyDirectory, $"{DestinyFilename}-{2d:0.00}.jpg"));
+                var index = 0;
+                double total = _bots.Count();
 
                 var orderedBots = _bots.OrderByDescending(bot => bot.Chance);
                 foreach (var bot in orderedBots)
                 {
-                    Execute(bmp, bot);
+                    bot.Save(bmp);
+
+                    index++;
+                    if (index % 750 == 0)
+                    {
+                        SendProgress(index / total);
+                    }
                 }
 
                 bmp.Save(Path.Combine(DestinyDirectory, DestinyFilename));
+
+                SendProgress(index / total);
             };
 
-            SendProgress(index / total);
             SendText("Done");
+        }
+        private void CreateAnimatedGif()
+        {
+            using (var bmp = new Bitmap(_baseFile))
+            {
+                using (var collection = new MagickImageCollection())
+                {
+                    collection.Add(new MagickImage(bmp));
+
+                    var step = 1d;
+                    var orderedBots = _bots.OrderByDescending(bot => bot.Chance);
+                    foreach (var bot in orderedBots)
+                    {
+                        if (bot.Chance < step)
+                        {
+                            collection.Add(new MagickImage(bmp));
+                            step -= 0.05d;
+                        }
+
+                        bot.Save(bmp);
+                    }
+
+                    collection.Add(new MagickImage(bmp));
+
+                    foreach (var item in collection)
+                    {
+                        item.AnimationDelay = 25;
+                    }
+                    collection.Last().AnimationDelay = 300;
+
+                    collection.Quantize(new QuantizeSettings
+                    {
+                        Colors = int.MaxValue,
+                        ColorSpace = ColorSpace.RGB,
+                    });
+
+                    var filename = Path.Combine(DestinyDirectory, $"{DestinyFilename}-animated.gif");
+                    collection.Write(filename);
+                }
+            }
+        }
+
+        private void CreateHeatMap()
+        {
+            using (var bmp = new Bitmap(_baseFile))
+            {
+                foreach (var bot in _bots)
+                {
+                    var color = Extensions.Interpolate(Color.Red, Color.Green, bot.Chance);
+                    bmp.SetPixel(bot.X, bot.Y, color);
+                }
+
+                bmp.Save(Path.Combine(DestinyDirectory, $"{DestinyFilename}-heat.jpg"));
+            };
         }
     }
 }

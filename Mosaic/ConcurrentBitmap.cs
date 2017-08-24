@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Drawing;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Mosaic
 {
     internal sealed class ConcurrentBitmap
     {
-        private Color[,] _pixels;
         private int _stride;
         private byte[] _rgbValues;
 

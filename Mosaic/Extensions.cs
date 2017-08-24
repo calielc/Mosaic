@@ -15,8 +15,11 @@ namespace Mosaic
                 .OrderByDescending(color => color.Count)
                 .ToArray();
 
-            var resultCollection = new List<MixedColor>();
-            foreach (var sourceItem in sourceCollection)
+            var resultCollection = new List<MixedColor>
+            {
+                sourceCollection.First()
+            };
+            foreach (var sourceItem in sourceCollection.Skip(1))
             {
                 var matchItem = resultCollection
                     .Select(resultItem => new
