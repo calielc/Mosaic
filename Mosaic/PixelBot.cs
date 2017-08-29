@@ -1,29 +1,25 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Mosaic
 {
-    [DebuggerDisplay("X: {_x}, Y: {_y}, Color: {Color}, Chance: {Chance}")]
-    internal partial class PixelBot
+    [DebuggerDisplay("X: {X}, Y: {Y}, Color: {Color}, Chance: {Chance}")]
+    internal class PixelBot
     {
-        private int _x;
-        private int _y;
-        private ConcurrentBitmapCollection _images;
+        private readonly ConcurrentBitmapCollection _images;
 
         public PixelBot(int x, int y, ConcurrentBitmapCollection images)
         {
-            _x = x;
-            _y = y;
+            X = x;
+            Y = y;
             _images = images;
         }
 
-        public int X => _x;
-        public int Y => _y;
+        public int X { get; }
+        public int Y { get; }
 
         public double Chance { get; private set; }
         public Color Color { get; private set; }
@@ -32,8 +28,8 @@ namespace Mosaic
 
         public void Load()
         {
-            var mixes = _images.GetPixel(_x, _y)
-                .GroupByDistance(16)
+            var mixes = _images.GetPixel(X, Y)
+                .GroupByDistance(1)
                 .OrderByDescending(color => color.Count)
                 .ToArray();
 
@@ -45,7 +41,7 @@ namespace Mosaic
 
         public void Save(Bitmap bmp)
         {
-            bmp.SetPixel(_x, _y, Color);
+            bmp.SetPixel(X, Y, Color);
         }
 
         public double NeighbourDistance(PixelBot bot)
@@ -55,9 +51,11 @@ namespace Mosaic
                 return 0;
             }
 
-            return Math.Sqrt(Extensions.DifferenceSqr(bot._x, this._x) + Extensions.DifferenceSqr(bot._y, this._y));
+            return Math.Sqrt(
+                MathUtils.DifferenceSqr(bot.X, this.X) +
+                MathUtils.DifferenceSqr(bot.Y, this.Y));
         }
 
-        public override string ToString() => $"X: {_x}, Y: {_y}, Color: {Color}, Chance: {Chance:p}";
+        public override string ToString() => $"X: {X}, Y: {Y}, Color: {Color}, Chance: {Chance:p}";
     }
 }

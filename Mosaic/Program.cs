@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Mosaic
 {
@@ -11,9 +7,10 @@ namespace Mosaic
     {
         static void Main(string[] args)
         {
-            const string sourceMedium = @"C:\Temp\Sample\Take-1 (800x600)";
-            const string sourceSmall = @"C:\Temp\Sample\Take-1 (267x200)";
-            var source = sourceMedium;
+            const string sourceS = @"C:\Temp\Sample\Take-1 (267x200)";
+            const string sourceM = @"C:\Temp\Sample\Take-1 (800x600)";
+            const string sourceL = @"C:\Temp\Sample\Take-1 (1280x960)";
+            const string source = sourceM;
 
             var destiny = $@"{source}\Merged-{DateTime.Now:yyyMMddHHmm}\";
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(destiny));
@@ -26,6 +23,7 @@ namespace Mosaic
                 {
                     UseParallel = true,
                     Heatmap = true,
+                    AnimatedGif = true,
                     SearchDirectory = source,
                     SearchPattern = "*.jpg",
                     DestinyDirectory = destiny,

@@ -5,8 +5,8 @@ namespace Mosaic
 {
     internal sealed class ConcurrentBitmap
     {
-        private int _stride;
-        private byte[] _rgbValues;
+        private readonly int _stride;
+        private readonly byte[] _rgbValues;
 
         public ConcurrentBitmap(string filename)
         {
@@ -20,7 +20,7 @@ namespace Mosaic
                 var bmpData = bmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, bmp.PixelFormat);
 
                 // Get the address of the first line.
-                IntPtr ptr = bmpData.Scan0;
+                var ptr = bmpData.Scan0;
 
                 // Declare an array to hold the bytes of the bitmap.
                 _stride = bmpData.Stride;
@@ -35,12 +35,13 @@ namespace Mosaic
             }
         }
 
-        public int Width { get; private set; }
+        public int Width { get; }
 
-        public int Height { get; private set; }
+        public int Height { get; }
 
-        public Color GetPixel(int x, int y) {
-            var pos = (y * _stride) + (x * 3);
+        public Color GetPixel(int x, int y)
+        {
+            var pos = y * _stride + x * 3;
             var b = _rgbValues[pos];
             var g = _rgbValues[pos + 1];
             var r = _rgbValues[pos + 2];

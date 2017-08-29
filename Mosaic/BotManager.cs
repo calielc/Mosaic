@@ -15,8 +15,6 @@ namespace Mosaic
         private IReadOnlyCollection<PixelBot> _bots;
         private string _baseFile;
 
-        public BotManager() { }
-
         public bool UseParallel { get; set; }
         public bool Heatmap { get; set; }
         public bool AnimatedGif { get; set; }
@@ -32,12 +30,12 @@ namespace Mosaic
         public event EventHandler<string> OnText;
         public event EventHandler<double> OnProgress;
 
-        protected void SendText(string text)
+        private void SendText(string text)
         {
             OnText?.Invoke(this, text);
         }
 
-        protected void SendProgress(double percentual)
+        private void SendProgress(double percentual)
         {
             OnProgress?.Invoke(this, percentual);
         }
@@ -46,7 +44,7 @@ namespace Mosaic
         {
             SendText("Loading images...");
 
-            var filenames = System.IO.Directory.GetFiles(SearchDirectory, SearchPattern);
+            var filenames = Directory.GetFiles(SearchDirectory, SearchPattern);
             _images = new ConcurrentBitmapCollection(filenames);
 
             SendText($"Loaded {_images.Count:#,##0} files.");
@@ -91,7 +89,7 @@ namespace Mosaic
         public void LoadBots()
         {
             SendText("Loading bots...");
-            double total = _bots.Count();
+            double total = _bots.Count;
 
             var index = 0;
 
@@ -116,7 +114,7 @@ namespace Mosaic
         {
             if (UseParallel)
             {
-                Parallel.ForEach(enumerable, item => execute(item));
+                Parallel.ForEach(enumerable, execute);
             }
             else
             {
@@ -131,20 +129,10 @@ namespace Mosaic
         {
             SendText("Saving colors...");
 
-            if (Heatmap)
-            {
-                CreateHeatMap();
-            }
-
-            if (AnimatedGif)
-            {
-                CreateAnimatedGif();
-            }
-
             using (var bmp = new Bitmap(_baseFile))
             {
                 var index = 0;
-                double total = _bots.Count();
+                double total = _bots.Count;
 
                 var orderedBots = _bots.OrderByDescending(bot => bot.Chance);
                 foreach (var bot in orderedBots)
@@ -161,12 +149,22 @@ namespace Mosaic
                 bmp.Save(Path.Combine(DestinyDirectory, DestinyFilename));
 
                 SendProgress(index / total);
-            };
+            }
+
+            CreateHeatMap();
+
+            CreateAnimatedGif();
 
             SendText("Done");
         }
+
         private void CreateAnimatedGif()
         {
+            if (AnimatedGif == false)
+            {
+                return;
+            }
+
             using (var bmp = new Bitmap(_baseFile))
             {
                 using (var collection = new MagickImageCollection())
@@ -208,16 +206,21 @@ namespace Mosaic
 
         private void CreateHeatMap()
         {
+            if (Heatmap == false)
+            {
+                return;
+            }
+
             using (var bmp = new Bitmap(_baseFile))
             {
                 foreach (var bot in _bots)
                 {
-                    var color = Extensions.Interpolate(Color.Red, Color.Green, bot.Chance);
+                    var color = Color.Red.Interpolate(Color.Green, bot.Chance);
                     bmp.SetPixel(bot.X, bot.Y, color);
                 }
 
                 bmp.Save(Path.Combine(DestinyDirectory, $"{DestinyFilename}-heat.jpg"));
-            };
+            }
         }
     }
 }
