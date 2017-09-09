@@ -54,10 +54,10 @@
     <Compile Include="ConcurrentBitmap.cs" />
     <Compile Include="ConcurrentBitmapCollection.cs" />
     <Compile Include="ColorExtensions.cs" />
-    <Compile Include="MathUtil.cs" />
     <Compile Include="MixedColor.cs" />
     <Compile Include="PixelBot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SingleColor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

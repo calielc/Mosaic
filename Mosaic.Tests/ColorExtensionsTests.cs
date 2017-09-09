@@ -2,12 +2,9 @@
 using System.Drawing;
 using NUnit.Framework;
 
-namespace Mosaic.Tests
-{
-    public sealed class ColorExtensionsTests
-    {
-        private static IEnumerable<TestCaseData> CasesInterpolete()
-        {
+namespace Mosaic.Tests {
+    public sealed class ColorExtensionsTests {
+        private static IEnumerable<TestCaseData> CasesInterpolete() {
             yield return new TestCaseData(
                 Color.FromArgb(0, 0, 0),
                 Color.FromArgb(255, 255, 255),
@@ -28,9 +25,10 @@ namespace Mosaic.Tests
         }
 
         [TestCaseSource(nameof(CasesInterpolete))]
-        public Color Should_calc_interpolate_color(Color start, Color end, double percent)
-        {
-            return start.Interpolate(end, percent);
+        public Color Should_calc_interpolate_color(Color start, Color end, double percent) {
+            var actual = start.Interpolate(end, percent);
+
+            return actual;
         }
     }
 }

@@ -48,9 +48,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColorExtensionsTests.cs" />
-    <Compile Include="MathTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MixedColorTests.cs" />
+    <Compile Include="SingleColorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mosaic\Mosaic.csproj">

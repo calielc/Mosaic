@@ -1,169 +1,115 @@
 ﻿using ImageMagick;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-namespace Mosaic
-{
-    public sealed class BotManager
-    {
+namespace Mosaic {
+    public sealed class BotManager {
         private ConcurrentBitmapCollection _images;
-        private IReadOnlyCollection<PixelBot> _bots;
+        private PixelBot[] _bots;
+        private double _botsCount;
         private string _baseFile;
+
+        public string SearchDirectory { get; set; }
+        public string SearchPattern { get; set; }
+
+        public string DestinyDirectory { get; set; }
+        public string DestinyFilename { get; set; }
 
         public bool UseParallel { get; set; }
         public bool Heatmap { get; set; }
         public bool AnimatedGif { get; set; }
 
-        public int Width => _images?.Width ?? 0;
-        public int Height => _images?.Height ?? 0;
-
-        public string SearchDirectory { get; set; }
-        public string SearchPattern { get; set; }
-        public string DestinyDirectory { get; set; }
-        public string DestinyFilename { get; set; }
+        public int Width { get; private set; }
+        public int Height { get; private set; }
 
         public event EventHandler<string> OnText;
         public event EventHandler<double> OnProgress;
 
-        private void SendText(string text)
-        {
-            OnText?.Invoke(this, text);
-        }
-
-        private void SendProgress(double percentual)
-        {
-            OnProgress?.Invoke(this, percentual);
-        }
-
-        public void LoadImages()
-        {
+        public void LoadImages() {
             SendText("Loading images...");
 
             var filenames = Directory.GetFiles(SearchDirectory, SearchPattern);
             _images = new ConcurrentBitmapCollection(filenames);
 
-            SendText($"Loaded {_images.Count:#,##0} files.");
+            Width = _images.Width;
+            Height = _images.Height;
+
+            SendText($"Loaded {_images.Count:#,##0} images.");
             SendText($"Dimensions: {Width} x {Height}.");
 
             _baseFile = filenames.First();
         }
 
-        public void CreateBots()
-        {
-            SendText("Creating bots...");
-            IEnumerable<PixelBot> Execute()
-            {
-                for (var x = 0; x < Width; x++)
-                {
-                    for (var y = 0; y < Height; y++)
-                    {
-                        yield return new PixelBot(x, y, _images);
-                    }
-                }
-            }
-            _bots = Execute().ToArray();
-
-            SendText($"Created {_bots.Count:#,##0} bots.");
-        }
-
-        public void LoadBots()
-        {
-            SendText("Loading bots...");
-            double total = _bots.Count;
+        public void LoadBots() {
+            _botsCount = Width * Height;
+            SendText($"Loading {_botsCount:#,##0} bots...");
 
             var index = 0;
+            _bots = new PixelBot[Width * Height];
+            Parallel.For(0, _bots.Length, coord => {
+                var x = coord % Width;
+                var y = coord / Width;
 
-            void Execute(PixelBot bot)
-            {
-                bot.Load();
+                var bot = new PixelBot(x, y);
+                bot.Load(_images.Count, _images.GetPixel(x, y));
+
+                _bots[coord] = bot;
 
                 index++;
-                if (index % 750 == 0)
-                {
-                    SendProgress(index / total);
+                if (index % 750 == 0) {
+                    SendProgress(index / _botsCount);
                 }
-            }
-            ForEach(_bots, Execute);
+            });
 
-            SendProgress(index / total);
             SendText("Done");
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ForEach<T>(IEnumerable<T> enumerable, Action<T> execute)
-        {
-            if (UseParallel)
-            {
-                Parallel.ForEach(enumerable, execute);
-            }
-            else
-            {
-                foreach (var item in enumerable)
-                {
-                    execute(item);
-                }
-            }
+        public async Task Save() {
+            await SaveFinal();
+            await SaveHeatmap();
+            await SaveAnimatedGif();
         }
 
-        public void SaveToFile()
-        {
-            SendText("Saving colors...");
+        private void SendText(string text) => OnText?.Invoke(this, text);
 
-            using (var bmp = new Bitmap(_baseFile))
-            {
+        private void SendProgress(double percentual) => OnProgress?.Invoke(this, percentual);
+
+        private async Task SaveFinal() => await Task.Factory.StartNew(() => {
+            SendText("Creating final...");
+            using (var bmp = new Bitmap(_baseFile)) {
                 var index = 0;
-                double total = _bots.Count;
-
-                var orderedBots = _bots.OrderByDescending(bot => bot.Chance);
-                foreach (var bot in orderedBots)
-                {
+                foreach (var bot in _bots) {
                     bot.Save(bmp);
 
                     index++;
-                    if (index % 750 == 0)
-                    {
-                        SendProgress(index / total);
+                    if (index % 750 == 0) {
+                        SendProgress(index / _botsCount);
                     }
                 }
-
                 bmp.Save(Path.Combine(DestinyDirectory, DestinyFilename));
 
-                SendProgress(index / total);
+                SendProgress(index / _botsCount);
             }
-
-            CreateHeatMap();
-
-            CreateAnimatedGif();
-
             SendText("Done");
-        }
+        });
 
-        private void CreateAnimatedGif()
-        {
-            if (AnimatedGif == false)
-            {
+        private async Task SaveAnimatedGif() => await Task.Factory.StartNew(() => {
+            if (AnimatedGif == false) {
                 return;
             }
 
             SendText("Creating Animated Gif...");
-
-            using (var bmp = new Bitmap(_baseFile))
-            {
-                using (var collection = new MagickImageCollection())
-                {
+            using (var bmp = new Bitmap(_baseFile)) {
+                using (var collection = new MagickImageCollection()) {
                     collection.Add(new MagickImage(bmp));
 
                     var step = 1d;
                     var orderedBots = _bots.OrderByDescending(bot => bot.Chance);
-                    foreach (var bot in orderedBots)
-                    {
-                        if (bot.Chance < step)
-                        {
+                    foreach (var bot in orderedBots) {
+                        if (bot.Chance < step) {
                             collection.Add(new MagickImage(bmp));
 
                             SendProgress(1d - step);
@@ -175,43 +121,40 @@ namespace Mosaic
 
                     collection.Add(new MagickImage(bmp));
 
-                    foreach (var item in collection)
-                    {
+                    foreach (var item in collection) {
                         item.AnimationDelay = 25;
                     }
+                    collection.First().AnimationDelay = 200;
                     collection.Last().AnimationDelay = 300;
 
-                    collection.Quantize(new QuantizeSettings
-                    {
+                    collection.Quantize(new QuantizeSettings {
                         Colors = int.MaxValue,
-                        ColorSpace = ColorSpace.RGB,
+                        ColorSpace = ColorSpace.RGB
                     });
 
                     var filename = Path.Combine(DestinyDirectory, $"{DestinyFilename}-animated.gif");
                     collection.Write(filename);
                 }
             }
-        }
+            SendText("Done");
+        });
 
-        private void CreateHeatMap()
-        {
-            if (Heatmap == false)
-            {
+        private async Task SaveHeatmap() => await Task.Factory.StartNew(() => {
+            if (Heatmap == false) {
                 return;
             }
 
-            SendText("Creating Heat Map...");
-
-            using (var bmp = new Bitmap(_baseFile))
-            {
-                foreach (var bot in _bots)
-                {
+            SendText("Creating Heatmap...");
+            using (var bmp = new Bitmap(_baseFile)) {
+                foreach (var bot in _bots) {
                     var color = Color.Red.Interpolate(Color.Green, bot.Chance);
                     bmp.SetPixel(bot.X, bot.Y, color);
                 }
 
-                bmp.Save(Path.Combine(DestinyDirectory, $"{DestinyFilename}-heat.jpg"));
+                var filename = Path.Combine(DestinyDirectory, $"{DestinyFilename}-heat.jpg");
+                bmp.Save(filename);
             }
-        }
+            SendText("Done");
+        });
     }
 }

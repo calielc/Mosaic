@@ -1,9 +1,7 @@
 ﻿using PowerArgs;
 
-namespace MosaicCmd
-{
-    public sealed class ProgramArgs
-    {
+namespace MosaicCmd {
+    public sealed class ProgramArgs {
         [ArgRequired(PromptIfMissing = true)]
         [ArgDescription("Search Directory")]
         [ArgExistingDirectory]
