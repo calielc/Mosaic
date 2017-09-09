@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Mosaic
 {
-    internal class BotManager
+    public sealed class BotManager
     {
         private ConcurrentBitmapCollection _images;
         private IReadOnlyCollection<PixelBot> _bots;
@@ -22,10 +22,10 @@ namespace Mosaic
         public int Width => _images?.Width ?? 0;
         public int Height => _images?.Height ?? 0;
 
-        public string SearchDirectory { get; internal set; }
-        public string SearchPattern { get; internal set; }
-        public string DestinyDirectory { get; internal set; }
-        public string DestinyFilename { get; internal set; }
+        public string SearchDirectory { get; set; }
+        public string SearchPattern { get; set; }
+        public string DestinyDirectory { get; set; }
+        public string DestinyFilename { get; set; }
 
         public event EventHandler<string> OnText;
         public event EventHandler<double> OnProgress;
@@ -56,17 +56,13 @@ namespace Mosaic
         public void CreateBots()
         {
             SendText("Creating bots...");
-
             IEnumerable<PixelBot> Execute()
             {
                 for (var x = 0; x < Width; x++)
                 {
                     for (var y = 0; y < Height; y++)
                     {
-                        yield return new PixelBot(x, y, _images)
-                        {
-                            GetNeighbours = GetNeighbours
-                        };
+                        yield return new PixelBot(x, y, _images);
                     }
                 }
             }
@@ -74,17 +70,6 @@ namespace Mosaic
 
             SendText($"Created {_bots.Count:#,##0} bots.");
         }
-
-        private IEnumerable<PixelBot> GetNeighbours(PixelBot source) => _bots
-            .AsParallel()
-            .Where(bot => bot != source)
-            .Select(bot => new
-            {
-                Bot = bot,
-                Distance = bot.NeighbourDistance(source)
-            })
-            .OrderBy(tuple => tuple.Distance)
-            .Select(tuple => tuple.Bot);
 
         public void LoadBots()
         {
@@ -125,7 +110,7 @@ namespace Mosaic
             }
         }
 
-        internal void SaveToFile()
+        public void SaveToFile()
         {
             SendText("Saving colors...");
 
@@ -165,6 +150,8 @@ namespace Mosaic
                 return;
             }
 
+            SendText("Creating Animated Gif...");
+
             using (var bmp = new Bitmap(_baseFile))
             {
                 using (var collection = new MagickImageCollection())
@@ -178,6 +165,8 @@ namespace Mosaic
                         if (bot.Chance < step)
                         {
                             collection.Add(new MagickImage(bmp));
+
+                            SendProgress(1d - step);
                             step -= 0.05d;
                         }
 
@@ -210,6 +199,8 @@ namespace Mosaic
             {
                 return;
             }
+
+            SendText("Creating Heat Map...");
 
             using (var bmp = new Bitmap(_baseFile))
             {

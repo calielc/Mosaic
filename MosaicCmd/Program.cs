@@ -1,19 +1,24 @@
 ﻿using System;
 using System.Diagnostics;
+using Mosaic;
+using PowerArgs;
 
-namespace Mosaic
+namespace MosaicCmd
 {
     class Program
     {
         static void Main(string[] args)
         {
-            const string sourceS = @"C:\Temp\Sample\Take-1 (267x200)";
-            const string sourceM = @"C:\Temp\Sample\Take-1 (800x600)";
-            const string sourceL = @"C:\Temp\Sample\Take-1 (1280x960)";
-            const string source = sourceM;
+            var programArgs = Args.Parse<ProgramArgs>(args);
 
-            var destiny = $@"{source}\Merged-{DateTime.Now:yyyMMddHHmm}\";
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(destiny));
+            if (programArgs.DestinyDirectory == null)
+            {
+                var destinyDirectory = $@"{programArgs.SearchDirectory}\Merged-{DateTime.Now:yyyMMddHHmm}\";
+                var path = System.IO.Path.GetDirectoryName(destinyDirectory);
+                System.IO.Directory.CreateDirectory(path);
+
+                programArgs.DestinyDirectory = destinyDirectory;
+            }
 
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -21,13 +26,13 @@ namespace Mosaic
             {
                 var manager = new BotManager
                 {
-                    UseParallel = true,
-                    Heatmap = true,
-                    AnimatedGif = true,
-                    SearchDirectory = source,
-                    SearchPattern = "*.jpg",
-                    DestinyDirectory = destiny,
-                    DestinyFilename = "mosaic.jpg",
+                    UseParallel = programArgs.UseParallel,
+                    Heatmap = programArgs.Heatmap,
+                    AnimatedGif = programArgs.AnimatedGif,
+                    SearchDirectory = programArgs.SearchDirectory,
+                    SearchPattern = programArgs.SearchPattern,
+                    DestinyDirectory = programArgs.DestinyDirectory,
+                    DestinyFilename = programArgs.DestinyFileName,
                 };
                 manager.OnText += (_, text) => Console.WriteLine(text);
                 manager.OnProgress += (_, percentual) => Console.Write($"{percentual:p} ");

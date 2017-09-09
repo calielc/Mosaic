@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.10
+VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mosaic", "Mosaic\Mosaic.csproj", "{E6FC4107-5A38-4234-A31B-23097EF4A0E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mosaic.Tests", "Mosaic.Tests\Mosaic.Tests.csproj", "{DB62C326-E297-4D84-99B6-29F66D6D4B0C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MosaicCmd", "MosaicCmd\MosaicCmd.csproj", "{50EBC383-14A6-43AC-9EA7-4920FB6CEE24}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{DB62C326-E297-4D84-99B6-29F66D6D4B0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB62C326-E297-4D84-99B6-29F66D6D4B0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB62C326-E297-4D84-99B6-29F66D6D4B0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50EBC383-14A6-43AC-9EA7-4920FB6CEE24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50EBC383-14A6-43AC-9EA7-4920FB6CEE24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50EBC383-14A6-43AC-9EA7-4920FB6CEE24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50EBC383-14A6-43AC-9EA7-4920FB6CEE24}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
