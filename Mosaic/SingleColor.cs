@@ -12,17 +12,17 @@ namespace Mosaic {
         }
 
         public byte R { get; }
-
         public byte G { get; }
-
         public byte B { get; }
 
         public bool Equals(SingleColor other) => R == other.R && G == other.G && B == other.B;
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj))
+            if (ReferenceEquals(null, obj)) {
                 return false;
-            return obj is SingleColor && Equals((SingleColor)obj);
+            }
+
+            return obj is SingleColor color && Equals(color);
         }
 
         public override int GetHashCode() {
@@ -34,14 +34,16 @@ namespace Mosaic {
             }
         }
 
+#if DEBUG
         public override string ToString() => $"[R: {R}, G: {G}, B: {B}]";
-
-        public static implicit operator Color(SingleColor self) => Color.FromArgb(self.R, self.G, self.B);
-
-        public static implicit operator SingleColor(Color self) => new SingleColor(self.R, self.G, self.B);
+#endif
 
         public static bool operator ==(SingleColor left, SingleColor right) => left.Equals(right);
 
         public static bool operator !=(SingleColor left, SingleColor right) => !left.Equals(right);
+
+        public static implicit operator Color(SingleColor self) => Color.FromArgb(self.R, self.G, self.B);
+
+        public static implicit operator SingleColor(Color self) => new SingleColor(self.R, self.G, self.B);
     }
 }

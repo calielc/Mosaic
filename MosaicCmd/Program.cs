@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using Mosaic;
 using PowerArgs;
@@ -11,8 +12,8 @@ namespace MosaicCmd {
 
             if (programArgs.DestinyDirectory == null) {
                 var destinyDirectory = $@"{programArgs.SearchDirectory}\Merged-{DateTime.Now:yyyMMdd}\";
-                var path = System.IO.Path.GetDirectoryName(destinyDirectory);
-                System.IO.Directory.CreateDirectory(path);
+                var path = Path.GetDirectoryName(destinyDirectory);
+                Directory.CreateDirectory(path);
 
                 programArgs.DestinyDirectory = destinyDirectory;
             }

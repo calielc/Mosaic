@@ -10,7 +10,7 @@ namespace Mosaic {
         private ConcurrentBitmapCollection _images;
         private PixelBot[] _bots;
         private double _botsCount;
-        private string _baseFile;
+        private string _baseFilename;
 
         public string SearchDirectory { get; set; }
         public string SearchPattern { get; set; }
@@ -29,7 +29,7 @@ namespace Mosaic {
         public event EventHandler<double> OnProgress;
 
         public void LoadImages() {
-            SendText("Loading images...");
+            SendText($"Loading all {SearchPattern} on folder {SearchDirectory} ...");
 
             var filenames = Directory.GetFiles(SearchDirectory, SearchPattern);
             _images = new ConcurrentBitmapCollection(filenames);
@@ -40,7 +40,7 @@ namespace Mosaic {
             SendText($"Loaded {_images.Count:#,##0} images.");
             SendText($"Dimensions: {Width} x {Height}.");
 
-            _baseFile = filenames.First();
+            _baseFilename = filenames.First();
         }
 
         public void LoadBots() {
@@ -48,22 +48,20 @@ namespace Mosaic {
             SendText($"Loading {_botsCount:#,##0} bots...");
 
             var index = 0;
+
             _bots = new PixelBot[Width * Height];
-            Parallel.For(0, _bots.Length, coord => {
+            For.Between(0, _bots.Length).Do(coord => {
                 var x = coord % Width;
                 var y = coord / Width;
 
-                var bot = new PixelBot(x, y);
-                bot.Load(_images.Count, _images.GetPixel(x, y));
-
+                var bot = new PixelBot(x, y).Load(_images);
                 _bots[coord] = bot;
 
                 index++;
                 if (index % 750 == 0) {
                     SendProgress(index / _botsCount);
                 }
-            });
-
+            }).Execute(UseParallel);
             SendText("Done");
         }
 
@@ -79,7 +77,7 @@ namespace Mosaic {
 
         private async Task SaveFinal() => await Task.Factory.StartNew(() => {
             SendText("Creating final...");
-            using (var bmp = new Bitmap(_baseFile)) {
+            using (var bmp = new Bitmap(_baseFilename)) {
                 var index = 0;
                 foreach (var bot in _bots) {
                     bot.Save(bmp);
@@ -102,7 +100,7 @@ namespace Mosaic {
             }
 
             SendText("Creating Animated Gif...");
-            using (var bmp = new Bitmap(_baseFile)) {
+            using (var bmp = new Bitmap(_baseFilename)) {
                 using (var collection = new MagickImageCollection()) {
                     collection.Add(new MagickImage(bmp));
 
@@ -145,7 +143,7 @@ namespace Mosaic {
             }
 
             SendText("Creating Heatmap...");
-            using (var bmp = new Bitmap(_baseFile)) {
+            using (var bmp = new Bitmap(_baseFilename)) {
                 foreach (var bot in _bots) {
                     var color = Color.Red.Interpolate(Color.Green, bot.Chance);
                     bmp.SetPixel(bot.X, bot.Y, color);

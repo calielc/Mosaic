@@ -4,7 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 
 namespace Mosaic {
-    [DebuggerDisplay("[R: {R}, G: {G}, B: {B}]")]
+    [DebuggerDisplay("{Count} x [R: {R}, G: {G}, B: {B}]")]
     public sealed class MixedColor : IEquatable<MixedColor> {
         private readonly Dictionary<SingleColor, int> _colors;
 
@@ -122,7 +122,7 @@ namespace Mosaic {
         public static bool operator !=(MixedColor left, MixedColor right) => !Equals(left, right);
 
 #if DEBUG
-        public override string ToString() => $"[R: {R:0.00}, G: {G:0.00}, B: {B:0.00}]";
+        public override string ToString() => $"{Count} x [R: {R:0.00}, G: {G:0.00}, B: {B:0.00}]";
 #endif
     }
 }
