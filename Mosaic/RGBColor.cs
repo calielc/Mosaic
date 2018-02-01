@@ -4,8 +4,8 @@ using System.Drawing;
 
 namespace Mosaic {
     [DebuggerDisplay("[R: {R}, G: {G}, B: {B}]")]
-    public struct SingleColor : IEquatable<SingleColor> {
-        public SingleColor(byte r, byte g, byte b) {
+    public readonly struct RGBColor : IEquatable<RGBColor> {
+        public RGBColor(byte r, byte g, byte b) {
             R = r;
             G = g;
             B = b;
@@ -15,14 +15,14 @@ namespace Mosaic {
         public byte G { get; }
         public byte B { get; }
 
-        public bool Equals(SingleColor other) => R == other.R && G == other.G && B == other.B;
+        public bool Equals(RGBColor other) => R == other.R && G == other.G && B == other.B;
 
         public override bool Equals(object obj) {
             if (ReferenceEquals(null, obj)) {
                 return false;
             }
 
-            return obj is SingleColor color && Equals(color);
+            return obj is RGBColor color && Equals(color);
         }
 
         public override int GetHashCode() {
@@ -38,12 +38,12 @@ namespace Mosaic {
         public override string ToString() => $"[R: {R}, G: {G}, B: {B}]";
 #endif
 
-        public static bool operator ==(SingleColor left, SingleColor right) => left.Equals(right);
+        public static bool operator ==(RGBColor left, RGBColor right) => left.Equals(right);
 
-        public static bool operator !=(SingleColor left, SingleColor right) => !left.Equals(right);
+        public static bool operator !=(RGBColor left, RGBColor right) => !left.Equals(right);
 
-        public static implicit operator Color(SingleColor self) => Color.FromArgb(self.R, self.G, self.B);
+        public static implicit operator Color(RGBColor self) => Color.FromArgb(self.R, self.G, self.B);
 
-        public static implicit operator SingleColor(Color self) => new SingleColor(self.R, self.G, self.B);
+        public static implicit operator RGBColor(Color self) => new RGBColor(self.R, self.G, self.B);
     }
 }
