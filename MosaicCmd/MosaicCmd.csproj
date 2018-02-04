@@ -43,7 +43,7 @@
     <Reference Include="System.Net" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Execute.cs" />
+    <Compile Include="Broadcaster.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

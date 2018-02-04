@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using Mosaic;
 using PowerArgs;
 
 namespace MosaicCmd {
@@ -16,7 +17,20 @@ namespace MosaicCmd {
                 programArgs.DestinyDirectory = destinyDirectory;
             }
 
-            await new Execute(programArgs).Exec();
+            var broadcaster = new Broadcaster();
+
+            await new App {
+                Parallel = programArgs.Parallel,
+                Heatmap = programArgs.Heatmap,
+                AnimatedGif = programArgs.AnimatedGif,
+                SearchDirectory = programArgs.SearchDirectory,
+                SearchPattern = programArgs.SearchPattern,
+                DestinyDirectory = programArgs.DestinyDirectory,
+                DestinyFilename = programArgs.DestinyFileName,
+                Broadcaster = broadcaster
+            }.Process();
+
+            broadcaster.Finish();
         }
     }
 }

@@ -8,42 +8,36 @@ using Mosaic.Layers;
 namespace Mosaic {
     internal sealed class ImageDiscovery {
         private readonly IReadOnlyCollection<string> _filenames;
-        private Images _images;
 
         public ImageDiscovery(string searchDirectory, string searchPattern) {
             SearchDirectory = searchDirectory;
             SearchPattern = searchPattern;
 
-            Broadcast.Start(this, $"Searching folder {SearchDirectory}\\{SearchPattern}...");
             _filenames = Directory.GetFiles(searchDirectory, searchPattern);
-            Broadcast.End(this);
         }
 
         public string SearchDirectory { get; }
         public string SearchPattern { get; }
 
-        public int Count => _filenames.Count;
-
         public string FirstFilename => _filenames.First();
 
-        public Images Load() {
-            if (_images != null) {
-                return _images;
-            }
-
+        public async Task<LayerCollection> Load() => await Task.Factory.StartNew(() => {
+            double total = _filenames.Count;
             Broadcast.Start(this, $"Loading {_filenames.Count} images");
+            try {
+                var items = new ConcurrentBag<Image>();
 
-            var images = new ConcurrentBag<Image>();
-            Parallel.ForEach(_filenames, filename => {
-                var image = new Image(filename);
-                images.Add(image);
+                Parallel.ForEach(_filenames, filename => {
+                    items.Add(new Image(filename));
 
-                Broadcast.Progress(this, 1d * images.Count / _filenames.Count);
-            });
+                    Broadcast.Progress(this, items.Count / total);
+                });
 
-            Broadcast.End(this);
-
-            return _images = new Images(images);
-        }
+                return new LayerCollection(items);
+            }
+            finally {
+                Broadcast.End(this);
+            }
+        });
     }
 }

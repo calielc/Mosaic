@@ -2,7 +2,7 @@
 
 namespace Mosaic.Layers {
     [DebuggerDisplay("Left: {Left}, Top: {Top}, Width: {Width}, Height: {Height}")]
-    public readonly struct Rect : IRectangle {
+    internal sealed class Rect : IRectangle {
         public Rect(int left, int top, int width, int height) {
             Left = left;
             Top = top;

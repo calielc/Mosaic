@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Mosaic.Bots;
 
@@ -10,7 +11,8 @@ namespace Mosaic {
         public string DestinyDirectory { private get; set; }
         public string DestinyFilename { private get; set; }
 
-        public bool UseParallel { private get; set; }
+        public int Parallel { private get; set; }
+
         public bool Heatmap { private get; set; }
         public bool AnimatedGif { private get; set; }
 
@@ -20,14 +22,25 @@ namespace Mosaic {
         }
 
         public async Task Process() {
-            var discovery = new ImageDiscovery(SearchDirectory, SearchPattern);
-            var images = discovery.Load();
+            Broadcast.Start(this, "Mosaic");
+            try {
+                var discovery = new ImageDiscovery(SearchDirectory, SearchPattern);
+                var images = await discovery.Load();
 
-            using (var creators = new Creators.Creators(images, discovery.FirstFilename, Heatmap, AnimatedGif)) {
-                await Bot.Start(images, creators);
+                var pool = new ArrayOfArrayPool<double>(images.Count, 3);
 
-                var filename = Path.Combine(DestinyDirectory, DestinyFilename);
-                await creators.Flush(filename);
+                using (var creators = new Creators.Creators(images, discovery.FirstFilename, Heatmap, AnimatedGif)) {
+                    var queue = new BotQueue(creators);
+                    queue.Enqueue(new SpitterBot(images, queue, pool));
+
+                    await queue.WaitAll(Math.Max(1, Parallel));
+
+                    var filename = Path.Combine(DestinyDirectory, DestinyFilename);
+                    await creators.Flush(filename);
+                }
+            }
+            finally {
+                Broadcast.End(this);
             }
         }
     }

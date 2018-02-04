@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ImageMagick;
@@ -19,8 +20,8 @@ namespace Mosaic.Creators {
             }
         }
 
-        public async Task Set(BotResult botResult) => await Task.Factory.StartNew(() => {
-            for (var x = 0; x < botResult.Width; x++) {
+        public async Task Set(BotResult botResult) => await Task.Run(() => {
+            Parallel.For(0, botResult.Width, x => {
                 for (var y = 0; y < botResult.Height; y++) {
                     for (var step = 1d; step >= 0; step -= 0.5d) {
                         if (step > botResult.Odds[x, y]) {
@@ -30,32 +31,37 @@ namespace Mosaic.Creators {
                         _steps[step].SetPixel(botResult.Left + x, botResult.Top + y, botResult.Colors[x, y]);
                     }
                 }
-            }
+            });
         });
 
-        public async Task Flush(string filename) => await Task.Factory.StartNew(() => {
-            filename = $"{filename}-animated.gif";
+        public async Task Flush(string filename) => await Task.Run(() => {
+            var directory = Path.GetDirectoryName(filename);
+            var name = Path.GetFileNameWithoutExtension(filename);
+            filename = Path.Combine(directory, $"{name}-animated.gif");
+
             Broadcast.Start(this, $"Saving {filename}...");
+            try {
+                var magickImages = _steps
+                    .OrderByDescending(pair => pair.Key)
+                    .Select(pair => new MagickImage(pair.Value) {
+                        AnimationDelay = 25
+                    });
 
-            var magickImages = _steps
-                .OrderByDescending(pair => pair.Key)
-                .Select(pair => new MagickImage(pair.Value) {
-                    AnimationDelay = 25
-                });
+                using (var magickImageCollection = new MagickImageCollection(magickImages)) {
+                    magickImageCollection.First().AnimationDelay = 200;
+                    magickImageCollection.Last().AnimationDelay = 300;
 
-            using (var magickImageCollection = new MagickImageCollection(magickImages)) {
-                magickImageCollection.First().AnimationDelay = 200;
-                magickImageCollection.Last().AnimationDelay = 300;
+                    magickImageCollection.Quantize(new QuantizeSettings {
+                        Colors = int.MaxValue,
+                        ColorSpace = ColorSpace.RGB
+                    });
 
-                magickImageCollection.Quantize(new QuantizeSettings {
-                    Colors = int.MaxValue,
-                    ColorSpace = ColorSpace.RGB
-                });
-
-                magickImageCollection.Write(filename);
+                    magickImageCollection.Write(filename);
+                }
             }
-
-            Broadcast.End(this);
+            finally {
+                Broadcast.End(this);
+            }
         });
 
         public void Dispose() {

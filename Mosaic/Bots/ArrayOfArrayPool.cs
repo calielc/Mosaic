@@ -5,14 +5,16 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace Mosaic.Bots {
-    internal sealed class DoubleBidimensionalArrayPool {
+    internal sealed class ArrayOfArrayPool<T> {
         private readonly ConcurrentBag<Item> _items = new ConcurrentBag<Item>();
 
-        public DoubleBidimensionalArrayPool(int externalCount) {
+        public ArrayOfArrayPool(int externalCount, int internalCount) {
             ExternalCount = externalCount;
+            InternalCount = internalCount;
         }
 
         public int ExternalCount { get; }
+        public int InternalCount { get; }
 
         public Item Rent() {
             lock (_items) {
@@ -27,14 +29,14 @@ namespace Mosaic.Bots {
 
         public sealed class Item {
             private bool _rented;
-            private readonly double[][] _array;
+            private readonly T[][] _array;
 
-            internal Item(DoubleBidimensionalArrayPool owner) {
+            internal Item(ArrayOfArrayPool<T> owner) {
                 _rented = true;
 
-                _array = new double[owner.ExternalCount][];
+                _array = new T[owner.ExternalCount][];
                 for (var i = 0; i < owner.ExternalCount; i++) {
-                    _array[i] = new double[3];
+                    _array[i] = new T[owner.InternalCount];
                 }
 
                 owner._items.Add(this);
@@ -49,7 +51,7 @@ namespace Mosaic.Bots {
                 return true;
             }
 
-            public Item Fill<T>(IEnumerable<T> items, Action<double[], T> action) {
+            public Item Fill<T2>(IEnumerable<T2> items, Action<T[], T2> action) {
                 var tuples = items.Select((item, index) => (row: _array[index], item));
 
                 Parallel.ForEach(tuples, tuple => {
@@ -63,7 +65,7 @@ namespace Mosaic.Bots {
                 _rented = false;
             }
 
-            public static implicit operator double[][] (Item self) => self?._array;
+            public static implicit operator T[][] (Item self) => self?._array;
         }
     }
 }

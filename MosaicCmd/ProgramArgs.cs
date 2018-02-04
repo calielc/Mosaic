@@ -22,8 +22,8 @@ namespace MosaicCmd {
         public string DestinyFileName { get; set; }
 
         [ArgDefaultValue(false)]
-        [ArgDescription("Should use Parallel")]
-        public bool UseParallel { get; set; }
+        [ArgDescription("How many bots")]
+        public int Parallel { get; set; }
 
         [ArgDefaultValue(false)]
         [ArgDescription("Will generate a heatmap file")]

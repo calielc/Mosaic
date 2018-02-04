@@ -69,20 +69,19 @@
     <Reference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bots\Bot.cs" />
+    <Compile Include="Bots\BotQueue.cs" />
+    <Compile Include="Bots\SpitterBot.cs" />
     <Compile Include="Bots\CalcBot.cs" />
     <Compile Include="Broadcast.cs" />
     <Compile Include="Creators\AnimatedGifCreator.cs" />
     <Compile Include="App.cs" />
     <Compile Include="Bots\IBot.cs" />
     <Compile Include="IBroadcaster.cs" />
-    <Compile Include="Layers\ILayers.cs" />
-    <Compile Include="Layers\Images.cs" />
+    <Compile Include="Layers\LayerCollection.cs" />
     <Compile Include="Layers\IRectangle.cs" />
     <Compile Include="Layers\ISize.cs" />
     <Compile Include="Layers\Rectangle.cs" />
     <Compile Include="Layers\Window.cs" />
-    <Compile Include="Layers\Windows.cs" />
     <Compile Include="Pixel.cs" />
     <Compile Include="Creators\Creators.cs" />
     <Compile Include="Creators\HeatmapCreator.cs" />
@@ -94,8 +93,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RGBColor.cs" />
     <Compile Include="Bots\BotResult.cs" />
-    <Compile Include="Bots\DoubleBidimensionalArrayPool.cs" />
-    <Compile Include="Bots\SplitterBot.cs" />
+    <Compile Include="Bots\ArrayOfArrayPool.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

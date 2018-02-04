@@ -3,42 +3,48 @@ using System.Linq;
 using System.Threading.Tasks;
 using Accord.MachineLearning;
 using Mosaic.Creators;
-using Mosaic.Layers;
 
 namespace Mosaic.Bots {
     internal sealed class CalcBot : IBot {
-        private readonly ILayers _layers;
-        private readonly DoubleBidimensionalArrayPool _pool;
+        private readonly Layers.LayerCollection _layerCollection;
+        private readonly ArrayOfArrayPool<double> _pool;
 
-        public CalcBot(ILayers layers, DoubleBidimensionalArrayPool sharedPool) {
-            _layers = layers;
+        public CalcBot(Layers.LayerCollection layerCollection, ArrayOfArrayPool<double> pool) {
+            _layerCollection = layerCollection;
 
-            _pool = sharedPool.ExternalCount == _layers.Count
-                ? sharedPool
-                : new DoubleBidimensionalArrayPool(_layers.Count);
+            _pool = pool.ExternalCount == _layerCollection.Count && pool.InternalCount == 3
+                ? pool
+                : new ArrayOfArrayPool<double>(_layerCollection.Count, 3);
         }
 
-        public async Task Process(ICreator creator) => await Task.Factory.StartNew(async () => {
-            Broadcast.Start(this, $"Calcing {_layers.Left}x{_layers.Top}...");
+        public async Task Process(ICreator creator) => await Task.Run(async () => {
+            Broadcast.Start(this, $"Calcing: {_layerCollection.Left}x{_layerCollection.Top}...");
+            try {
+                var colors = new RGBColor[_layerCollection.Width, _layerCollection.Height];
+                var odds = new double[_layerCollection.Width, _layerCollection.Height];
 
-            var colors = new RGBColor[_layers.Width, _layers.Height];
-            var odds = new double[_layers.Width, _layers.Height];
+                var groups = from layer in _layerCollection
+                             let pixels = layer.GetPixels()
+                             from pixel in pixels
+                             group pixel by (pixel.X, pixel.Y) into g
+                             select (x: g.Key.X, y: g.Key.Y, colors: g.Select(k => k.Color));
 
-            var groups = from layer in _layers
-                         let pixels = layer.GetPixels()
-                         from pixel in pixels
-                         group pixel by (pixel.X, pixel.Y) into g
-                         select (x: g.Key.X, y: g.Key.Y, colors: g.Select(k => k.Color));
+                var done = 0;
+                double total = _layerCollection.Width * _layerCollection.Height;
 
-            Parallel.ForEach(groups, group => {
-                ProcessGroup(in group, in colors, in odds);
-                Broadcast.Step(this);
-            });
+                Parallel.ForEach(groups, group => {
+                    ProcessGroup(in group, in colors, in odds);
 
-            var result = new BotResult(_layers, colors, odds);
-            await creator.Set(result);
+                    done += 1;
+                    Broadcast.Progress(this, done / total);
+                });
 
-            Broadcast.End(this);
+                var result = new BotResult(_layerCollection, colors, odds);
+                await creator.Set(result);
+            }
+            finally {
+                Broadcast.End(this);
+            }
         });
 
         private void ProcessGroup(in (int x, int y, IEnumerable<RGBColor> colors) group, in RGBColor[,] colors, in double[,] odds) {
@@ -49,6 +55,7 @@ namespace Mosaic.Bots {
                 row[1] = color.G;
                 row[2] = color.B;
             });
+
             try {
                 var clusters = kmeans.Learn(rentedArray);
 

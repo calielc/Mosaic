@@ -1,7 +1,7 @@
 ﻿using Mosaic.Layers;
 
 namespace Mosaic.Bots {
-    internal sealed class BotResult : IRectangle {
+    internal readonly struct BotResult : IRectangle {
         private readonly IRectangle _rectangle;
 
         public BotResult(IRectangle rectangle, RGBColor[,] colors, double[,] odds) {
