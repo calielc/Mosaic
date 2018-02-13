@@ -87,7 +87,6 @@
     <Compile Include="Layers\ISize.cs" />
     <Compile Include="Layers\Rectangle.cs" />
     <Compile Include="Layers\Window.cs" />
-    <Compile Include="Pixel.cs" />
     <Compile Include="Creators\Creators.cs" />
     <Compile Include="Creators\HeatmapCreator.cs" />
     <Compile Include="Creators\ICreator.cs" />

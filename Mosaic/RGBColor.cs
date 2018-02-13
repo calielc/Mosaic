@@ -3,22 +3,26 @@ using System.Diagnostics;
 using System.Drawing;
 
 namespace Mosaic {
-    [DebuggerDisplay("[R: {R}, G: {G}, B: {B}]")]
+    [DebuggerDisplay("[R: {_r}, G: {_g}, B: {_b}]")]
     public readonly struct RGBColor : IEquatable<RGBColor> {
+        private readonly byte _b;
+        private readonly byte _g;
+        private readonly byte _r;
+
         public RGBColor(byte r, byte g, byte b) {
-            R = r;
-            G = g;
-            B = b;
+            _r = r;
+            _g = g;
+            _b = b;
         }
 
-        public byte R { get; }
-        public byte G { get; }
-        public byte B { get; }
+        public byte R => _r;
+        public byte G => _g;
+        public byte B => _b;
 
-        public bool Equals(RGBColor other) => R == other.R && G == other.G && B == other.B;
+        public bool Equals(RGBColor other) => _r == other._r && _g == other._g && _b == other._b;
 
         public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj)) {
+            if (obj is null) {
                 return false;
             }
 
@@ -27,15 +31,15 @@ namespace Mosaic {
 
         public override int GetHashCode() {
             unchecked {
-                var hashCode = R.GetHashCode();
-                hashCode = (hashCode * 397) ^ G.GetHashCode();
-                hashCode = (hashCode * 397) ^ B.GetHashCode();
+                var hashCode = _r.GetHashCode();
+                hashCode = (hashCode * 397) ^ _g.GetHashCode();
+                hashCode = (hashCode * 397) ^ _b.GetHashCode();
                 return hashCode;
             }
         }
 
 #if DEBUG
-        public override string ToString() => $"[R: {R}, G: {G}, B: {B}]";
+        public override string ToString() => $"[R: {_r}, G: {_g}, B: {_b}]";
 #endif
 
         public static bool operator ==(RGBColor left, RGBColor right) => left.Equals(right);

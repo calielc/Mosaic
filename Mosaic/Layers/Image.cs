@@ -6,13 +6,16 @@ using System.Threading.Tasks;
 namespace Mosaic.Layers {
     internal sealed class Image : ILayer {
         private readonly RGBColor[,] _pixels;
+        private readonly string _name;
+        private readonly int _width;
+        private readonly int _height;
 
         public Image(string filename) {
-            Name = Path.GetFileNameWithoutExtension(filename);
+            _name = Path.GetFileNameWithoutExtension(filename);
 
             using (var bmp = new Bitmap(filename)) {
-                Width = bmp.Width;
-                Height = bmp.Height;
+                _width = bmp.Width;
+                _height = bmp.Height;
 
                 // Lock the bitmap's bits.  
                 var rect = new Rectangle(0, 0, Width, Height);
@@ -43,10 +46,9 @@ namespace Mosaic.Layers {
             }
         }
 
-        public string Name { get; }
-
-        public int Width { get; }
-        public int Height { get; }
+        public string Name => _name;
+        public int Width => _width;
+        public int Height => _height;
 
         public RGBColor this[int x, int y] => _pixels[x, y];
 

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,7 +15,7 @@ namespace Mosaic.Layers {
             _rectangle = _layers.First.Value;
         }
 
-        public LayerCollection(IEnumerable<Window> windows) {
+        private LayerCollection(IEnumerable<Window> windows) {
             _layers = new LinkedList<ILayer>(windows.OrderBy(image => image.Name));
             _rectangle = _layers.First.Value;
 

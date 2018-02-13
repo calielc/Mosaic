@@ -3,17 +3,22 @@
 namespace Mosaic.Layers {
     [DebuggerDisplay("Left: {Left}, Top: {Top}, Width: {Width}, Height: {Height}")]
     internal sealed class Rect : IRectangle {
+        private readonly int _left;
+        private readonly int _top;
+        private readonly int _width;
+        private readonly int _height;
+
         public Rect(int left, int top, int width, int height) {
-            Left = left;
-            Top = top;
-            Width = width;
-            Height = height;
+            _left = left;
+            _top = top;
+            _width = width;
+            _height = height;
         }
 
-        public int Left { get; }
-        public int Top { get; }
+        public int Left => _left;
+        public int Top => _top;
 
-        public int Width { get; }
-        public int Height { get; }
+        public int Width => _width;
+        public int Height => _height;
     }
 }

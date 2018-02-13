@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Mosaic.Creators;
 
 namespace Mosaic.Bots {
-    internal class BotQueue {
+    internal sealed class BotQueue {
         private readonly ICreator _creator;
         private readonly BlockingCollection<IBot> _queue;
         private int _runningAgents;
@@ -21,6 +21,8 @@ namespace Mosaic.Bots {
         }
 
         public async Task WaitAll(int consumers) {
+            consumers = Math.Min(Math.Max(consumers, 1), Environment.ProcessorCount);
+
             var tasks = Enumerable.Range(0, consumers).Select(id => new Agent(id, this).Run());
 
             await Task.WhenAll(tasks);

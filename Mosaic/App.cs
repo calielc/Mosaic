@@ -32,8 +32,7 @@ namespace Mosaic {
                     var queue = new BotQueue(creators);
                     queue.Enqueue(new SpitterBot(images, queue));
 
-                    var consumers = GetConsumers();
-                    await queue.WaitAll(consumers);
+                    await queue.WaitAll(ParallelBots);
 
                     var filename = Path.Combine(DestinyDirectory, DestinyFilename);
                     await creators.Flush(filename);
@@ -42,18 +41,6 @@ namespace Mosaic {
             finally {
                 Broadcast.End(this);
             }
-        }
-
-        private int GetConsumers() {
-            if (ParallelBots <= 1) {
-                return 1;
-            }
-
-            if (ParallelBots >= Environment.ProcessorCount) {
-                return Environment.ProcessorCount;
-            }
-
-            return ParallelBots;
         }
     }
 }
