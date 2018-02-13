@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Mosaic.Bots {
     [DebuggerDisplay("Count: {_items.Count}")]
-    internal sealed class ArrayOfArrayPool<T> {
+    internal sealed class BidimensionalArrayPool<T> {
         private readonly ConcurrentBag<Item> _items = new ConcurrentBag<Item>();
 
         public Item Rent(int externalCount, int internalCount) {
@@ -28,18 +28,15 @@ namespace Mosaic.Bots {
             internal Item(int externalCount, int internalCount) {
                 ExternalCount = externalCount;
                 InternalCount = internalCount;
-                _rented = true;
 
-                Array = new T[externalCount][];
-                for (var i = 0; i < externalCount; i++) {
-                    Array[i] = new T[internalCount];
-                }
+                _rented = true;
+                Array = new T[externalCount, internalCount];
             }
 
             public int ExternalCount { get; }
             public int InternalCount { get; }
 
-            public T[][] Array { get; }
+            public T[,] Array { get; }
 
             internal bool TryToRent() {
                 if (_rented) {
@@ -54,7 +51,7 @@ namespace Mosaic.Bots {
                 _rented = false;
             }
 
-            public static implicit operator T[][] (Item self) => self.Array;
+            public static implicit operator T[,] (Item self) => self.Array;
         }
     }
 }

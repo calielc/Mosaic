@@ -20,13 +20,18 @@ namespace MosaicCmd {
             var broadcaster = new Broadcaster();
 
             await new App {
-                Parallel = programArgs.Parallel,
-                Heatmap = programArgs.Heatmap,
-                AnimatedGif = programArgs.AnimatedGif,
+                ParallelBots = programArgs.Parallel,
+
+                RenderHeatmap = programArgs.Heatmap,
+                RenderAnimatedGif = programArgs.AnimatedGif,
+                RenderTiles = programArgs.Tiles,
+
                 SearchDirectory = programArgs.SearchDirectory,
                 SearchPattern = programArgs.SearchPattern,
+
                 DestinyDirectory = programArgs.DestinyDirectory,
                 DestinyFilename = programArgs.DestinyFileName,
+
                 Broadcaster = broadcaster
             }.Process();
 

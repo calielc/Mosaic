@@ -1,6 +1,5 @@
 ﻿using System.Drawing;
 using System.Threading.Tasks;
-using Mosaic.Bots;
 using Mosaic.Layers;
 
 namespace Mosaic.Creators {
@@ -13,10 +12,10 @@ namespace Mosaic.Creators {
             _pixels = new Color[size.Width, size.Height];
         }
 
-        public async Task Set(BotResult botResult) => await Task.Factory.StartNew(() => {
-            Parallel.For(0, botResult.Width, x => {
-                for (var y = 0; y < botResult.Height; y++) {
-                    _pixels[botResult.Left + x, botResult.Top + y] = botResult.Colors[x, y];
+        public async Task Set(ILayerResult input) => await Task.Factory.StartNew(() => {
+            Parallel.For(0, input.Width, x => {
+                for (var y = 0; y < input.Height; y++) {
+                    _pixels[input.Left + x, input.Top + y] = input.Colors[x, y];
                 }
             });
         });

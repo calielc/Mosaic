@@ -39,14 +39,16 @@ namespace Mosaic.Layers {
                 select new Rect(_rectangle.Left + h.start, _rectangle.Top + v.start, h.size, v.size)
             ).Select(rect => new LayerCollection(_rawImages.Select(image => new Window(image, rect))));
 
-            IEnumerable<(int start, int size)> Split(double totalSize, int count) {
-                var localSize = totalSize / count;
-                return Enumerable.Range(0, count).Select(i => {
-                    var start = localSize * i;
-                    var end = localSize * (i + 1);
+            IEnumerable<(int start, int size)> Split(int totalSize, int count) {
+                var span = 0;
+                while (count > 0) {
+                    var size = (totalSize - span) / count;
 
-                    return (Convert.ToInt32(Math.Round(start)), Convert.ToInt32(Math.Round(end - start)));
-                });
+                    yield return (span, size);
+
+                    span += size;
+                    count--;
+                }
             }
         }
 

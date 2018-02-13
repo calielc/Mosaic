@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Mosaic.Layers {
+﻿namespace Mosaic.Layers {
     internal sealed class Window : ILayer {
         private readonly IRectangle _rectangle;
 
@@ -21,12 +19,6 @@ namespace Mosaic.Layers {
         public int Width => _rectangle.Width;
         public int Height => _rectangle.Height;
 
-        public IEnumerable<Pixel> GetPixels() {
-            for (int x = 0, realX = _rectangle.Left; x < _rectangle.Width; x++, realX++) {
-                for (int y = 0, realY = _rectangle.Top; y < _rectangle.Height; y++, realY++) {
-                    yield return new Pixel(x, y, Image[realX, realY]);
-                }
-            }
-        }
+        public RGBColor this[int x, int y] => Image[Left + x, Top + y];
     }
 }

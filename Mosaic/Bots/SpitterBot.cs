@@ -5,13 +5,11 @@ using Mosaic.Layers;
 namespace Mosaic.Bots {
     internal sealed class SpitterBot : IBot {
         private readonly LayerCollection _layerCollection;
-        private readonly ArrayOfArrayPool<double> _pool;
         private readonly BotQueue _queue;
 
-        public SpitterBot(LayerCollection layerCollection, BotQueue queue, ArrayOfArrayPool<double> pool) {
+        public SpitterBot(LayerCollection layerCollection, BotQueue queue) {
             _layerCollection = layerCollection;
             _queue = queue;
-            _pool = pool;
         }
 
         public async Task Process(ICreator creator) => await Task.Run(() => {
@@ -35,11 +33,12 @@ namespace Mosaic.Bots {
             }
 
             IBot NewBot(LayerCollection layerCollection) {
-                if (layerCollection.Width * layerCollection.Height > 10000) {
-                    return new SpitterBot(layerCollection, _queue, _pool);
+                const int maxArea = 50 * 50;
+                if (layerCollection.Width * layerCollection.Height > maxArea) {
+                    return new SpitterBot(layerCollection, _queue);
                 }
 
-                return new CalcBot(layerCollection, _pool);
+                return new CalcBot(layerCollection);
             }
         });
     }

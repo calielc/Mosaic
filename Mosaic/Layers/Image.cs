@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
@@ -50,14 +49,6 @@ namespace Mosaic.Layers {
         public int Height { get; }
 
         public RGBColor this[int x, int y] => _pixels[x, y];
-
-        public IEnumerable<Pixel> GetPixels() {
-            for (var x = 0; x < Width; x++) {
-                for (var y = 0; y < Height; y++) {
-                    yield return new Pixel(x, y, _pixels[x, x]);
-                }
-            }
-        }
 
         int IRectangle.Left => 0;
         int IRectangle.Top => 0;

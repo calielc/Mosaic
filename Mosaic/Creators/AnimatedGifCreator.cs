@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ImageMagick;
-using Mosaic.Bots;
 
 namespace Mosaic.Creators {
     internal sealed class AnimatedGifCreator : ICreator, IDisposable {
@@ -20,15 +19,15 @@ namespace Mosaic.Creators {
             }
         }
 
-        public async Task Set(BotResult botResult) => await Task.Run(() => {
-            Parallel.For(0, botResult.Width, x => {
-                for (var y = 0; y < botResult.Height; y++) {
+        public async Task Set(ILayerResult input) => await Task.Run(() => {
+            Parallel.For(0, input.Width, x => {
+                for (var y = 0; y < input.Height; y++) {
                     for (var step = 1d; step >= 0; step -= 0.5d) {
-                        if (step > botResult.Odds[x, y]) {
+                        if (step > input.Odds[x, y]) {
                             continue;
                         }
 
-                        _steps[step].SetPixel(botResult.Left + x, botResult.Top + y, botResult.Colors[x, y]);
+                        _steps[step].SetPixel(input.Left + x, input.Top + y, input.Colors[x, y]);
                     }
                 }
             });

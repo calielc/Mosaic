@@ -32,5 +32,9 @@ namespace MosaicCmd {
         [ArgDefaultValue(false)]
         [ArgDescription("Will generate a animated gif")]
         public bool AnimatedGif { get; set; }
+
+        [ArgDefaultValue(false)]
+        [ArgDescription("Will generate a tiles")]
+        public bool Tiles { get; set; }
     }
 }

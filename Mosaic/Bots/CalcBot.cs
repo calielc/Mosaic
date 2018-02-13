@@ -1,72 +1,90 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Accord.MachineLearning;
 using Mosaic.Creators;
+using Mosaic.Layers;
 
 namespace Mosaic.Bots {
     internal sealed class CalcBot : IBot {
-        private readonly Layers.LayerCollection _layerCollection;
-        private readonly ArrayOfArrayPool<double> _pool;
+        private readonly LayerCollection _layerCollection;
 
-        public CalcBot(Layers.LayerCollection layerCollection, ArrayOfArrayPool<double> pool) {
+        public CalcBot(LayerCollection layerCollection) {
             _layerCollection = layerCollection;
-
-            _pool = pool.ExternalCount == _layerCollection.Count && pool.InternalCount == 3
-                ? pool
-                : new ArrayOfArrayPool<double>(_layerCollection.Count, 3);
         }
 
         public async Task Process(ICreator creator) => await Task.Run(async () => {
-            Broadcast.Start(this, $"Calcing: {_layerCollection.Left}x{_layerCollection.Top}...");
+            var done = 0;
+            double total = _layerCollection.Width * _layerCollection.Height;
+
+            Broadcast.Start(this, $"Layer: {_layerCollection.Left:000}+{_layerCollection.Width:00} x {_layerCollection.Top:000}+{_layerCollection.Height:00}...");
             try {
-                var colors = new RGBColor[_layerCollection.Width, _layerCollection.Height];
-                var odds = new double[_layerCollection.Width, _layerCollection.Height];
+                using (var result = new LayerResult(_layerCollection)) {
+                    for (var x = 0; x < _layerCollection.Width; x++) {
+                        for (var y = 0; y < _layerCollection.Height; y++) {
+                            var group = new Group(x, y, _layerCollection.Select(layer => layer[x, y]), _layerCollection.Count, result);
+                            group.Process();
 
-                var groups = from layer in _layerCollection
-                             let pixels = layer.GetPixels()
-                             from pixel in pixels
-                             group pixel by (pixel.X, pixel.Y) into g
-                             select (x: g.Key.X, y: g.Key.Y, colors: g.Select(k => k.Color));
+                            Broadcast.Progress(this, ++done / total);
+                        }
+                    }
 
-                var done = 0;
-                double total = _layerCollection.Width * _layerCollection.Height;
-
-                Parallel.ForEach(groups, group => {
-                    ProcessGroup(in group, in colors, in odds);
-
-                    done += 1;
-                    Broadcast.Progress(this, done / total);
-                });
-
-                var result = new BotResult(_layerCollection, colors, odds);
-                await creator.Set(result);
+                    await creator.Set(result);
+                }
             }
             finally {
                 Broadcast.End(this);
             }
         });
 
-        private void ProcessGroup(in (int x, int y, IEnumerable<RGBColor> colors) group, in RGBColor[,] colors, in double[,] odds) {
-            var kmeans = new KMeans(3);
+        [DebuggerDisplay("x: {_x}, y: {_y}")]
+        private readonly struct Group {
+            private readonly int _x;
+            private readonly int _y;
+            private readonly IEnumerable<RGBColor> _colors;
+            private readonly int _counts;
+            private readonly LayerResult _layerResult;
 
-            var rentedArray = _pool.Rent().Fill(group.colors, (row, color) => {
-                row[0] = color.R;
-                row[1] = color.G;
-                row[2] = color.B;
-            });
-
-            try {
-                var clusters = kmeans.Learn(rentedArray);
-
-                var maxProportion = clusters.Proportions.Max();
-                var bestCluster = clusters.First(cluster => cluster.Proportion >= maxProportion);
-
-                colors[group.x, group.y] = new RGBColor((byte)bestCluster.Centroid[0], (byte)bestCluster.Centroid[1], (byte)bestCluster.Centroid[2]);
-                odds[group.x, group.y] = maxProportion;
+            public Group(int x, int y, IEnumerable<RGBColor> colors, int counts, LayerResult layerResult) {
+                _x = x;
+                _y = y;
+                _colors = colors;
+                _counts = counts;
+                _layerResult = layerResult;
             }
-            finally {
-                rentedArray.Return();
+
+            public void Process() {
+                var kmeans = new KMeans(3);
+
+                var rentedArray = PoolsHub.ArrayOfArrayOfDouble.Rent(_counts, 3);
+                Fill(rentedArray);
+
+                try {
+                    var clusters = kmeans.Learn(rentedArray);
+
+                    var maxProportion = clusters.Proportions.Max();
+                    var bestCluster = clusters.First(cluster => cluster.Proportion >= maxProportion);
+
+                    Flush(bestCluster);
+                }
+                finally {
+                    rentedArray.Return();
+                }
+            }
+
+            private void Fill(double[][] array) {
+                var tuples = _colors.Select((item, index) => (row: array[index], color: item));
+                Parallel.ForEach(tuples, tuple => {
+                    tuple.row[0] = tuple.color.R;
+                    tuple.row[1] = tuple.color.G;
+                    tuple.row[2] = tuple.color.B;
+                });
+            }
+
+            private void Flush(KMeansClusterCollection.KMeansCluster cluster) {
+                _layerResult.Set(_x, _y, new RGBColor((byte)cluster.Centroid[0], (byte)cluster.Centroid[1], (byte)cluster.Centroid[2]));
+                _layerResult.Set(_x, _y, cluster.Proportion);
             }
         }
     }
