@@ -8,10 +8,12 @@ namespace Mosaic.Creators {
         private readonly ISize _size;
         private readonly Color[,] _pixels;
 
-        public HeatmapCreator(ISize size) {
+        public HeatmapCreator(ISize size, Broadcast broadcast) {
             _size = size;
             _pixels = new Color[size.Width, size.Height];
         }
+
+        public Broadcast Broadcast { get; set; }
 
         public async Task Set(ILayerResult input) => await Task.Run(() => {
             Parallel.For(0, input.Width, x => {

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,36 +6,37 @@ using Mosaic.Layers;
 
 namespace Mosaic {
     internal sealed class ImageDiscovery {
-        private readonly IReadOnlyCollection<string> _filenames;
+        private readonly Broadcast _broadcast;
 
-        public ImageDiscovery(string searchDirectory, string searchPattern) {
-            SearchDirectory = searchDirectory;
-            SearchPattern = searchPattern;
-
-            _filenames = Directory.GetFiles(searchDirectory, searchPattern);
+        public ImageDiscovery(Broadcast broadcast) {
+            _broadcast = broadcast;
         }
 
-        public string SearchDirectory { get; }
-        public string SearchPattern { get; }
+        public string SearchDirectory { get; set; }
+        public string SearchPattern { get; set; }
 
-        public string FirstFilename => _filenames.First();
+        public string FirstFilename { get; private set; }
 
         public async Task<LayerCollection> Load() => await Task.Factory.StartNew(() => {
-            double total = _filenames.Count;
-            Broadcast.Start(this, $"Loading {_filenames.Count} images");
+            var filenames = Directory.GetFiles(SearchDirectory, SearchPattern);
+
+            FirstFilename = filenames.First();
+
+            double total = filenames.Length;
+            _broadcast.Start(this, $"Loading {filenames.Length} images");
             try {
                 var items = new ConcurrentBag<Image>();
 
-                Parallel.ForEach(_filenames, filename => {
+                Parallel.ForEach(filenames, filename => {
                     items.Add(new Image(filename));
 
-                    Broadcast.Progress(this, items.Count / total);
+                    _broadcast.Progress(this, items.Count / total);
                 });
 
                 return new LayerCollection(items);
             }
             finally {
-                Broadcast.End(this);
+                _broadcast.End(this);
             }
         });
     }

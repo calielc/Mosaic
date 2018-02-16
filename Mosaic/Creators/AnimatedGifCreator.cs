@@ -10,7 +10,7 @@ namespace Mosaic.Creators {
     internal sealed class AnimatedGifCreator : ICreator, IDisposable {
         private readonly Dictionary<double, Bitmap> _steps;
 
-        public AnimatedGifCreator(string filename) {
+        public AnimatedGifCreator(string filename, Broadcast broadcast) {
             using (var original = new Bitmap(filename)) {
                 _steps = new Dictionary<double, Bitmap>();
                 for (var step = 1d; step >= 0; step -= 0.5d) {
@@ -18,6 +18,8 @@ namespace Mosaic.Creators {
                 }
             }
         }
+
+        public Broadcast Broadcast { get; set; }
 
         public async Task Set(ILayerResult input) => await Task.Run(() => {
             Parallel.For(0, input.Width, x => {

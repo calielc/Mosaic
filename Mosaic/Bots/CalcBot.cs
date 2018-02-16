@@ -5,20 +5,25 @@ using System.Threading.Tasks;
 using Accord.MachineLearning;
 using Mosaic.Creators;
 using Mosaic.Layers;
+using Mosaic.Queue;
 
 namespace Mosaic.Bots {
-    internal sealed class CalcBot : IBot {
+    internal sealed class CalcBot : IBusAction {
         private readonly LayerCollection _layerCollection;
+        private readonly Broadcast _broadcast;
+        private readonly ICreator _creator;
 
-        public CalcBot(LayerCollection layerCollection) {
+        public CalcBot(LayerCollection layerCollection, ICreator creator, Broadcast broadcast) {
             _layerCollection = layerCollection;
+            _broadcast = broadcast;
+            _creator = creator;
         }
 
-        public async Task Process(ICreator creator) => await Task.Run(async () => {
+        public async Task Run() => await Task.Run(async () => {
             var done = 0;
             double total = _layerCollection.Width * _layerCollection.Height;
 
-            Broadcast.Start(this, $"Layer: {_layerCollection.Left:000}+{_layerCollection.Width:00} x {_layerCollection.Top:000}+{_layerCollection.Height:00}...");
+            _broadcast.Start(this, $"Layer: {_layerCollection.Left:000}+{_layerCollection.Width:00} x {_layerCollection.Top:000}+{_layerCollection.Height:00}...");
             try {
                 using (var result = new LayerResult(_layerCollection)) {
                     for (var x = 0; x < _layerCollection.Width; x++) {
@@ -26,15 +31,15 @@ namespace Mosaic.Bots {
                             var group = new Group(x, y, _layerCollection.Select(layer => layer[x, y]), _layerCollection.Count, result);
                             group.Process();
 
-                            Broadcast.Progress(this, ++done / total);
+                            _broadcast.Progress(this, ++done / total);
                         }
                     }
 
-                    await creator.Set(result);
+                    await _creator.Set(result);
                 }
             }
             finally {
-                Broadcast.End(this);
+                _broadcast.End(this);
             }
         });
 
@@ -55,12 +60,12 @@ namespace Mosaic.Bots {
             }
 
             public void Process() {
-                var kmeans = new KMeans(3);
-
                 var rentedArray = PoolsHub.ArrayOfArrayOfDouble.Rent(_counts, 3);
-                Fill(rentedArray);
-
                 try {
+                    Fill(rentedArray);
+
+                    const int segments = 12;
+                    var kmeans = new KMeans(segments);
                     var clusters = kmeans.Learn(rentedArray);
 
                     var maxProportion = clusters.Proportions.Max();

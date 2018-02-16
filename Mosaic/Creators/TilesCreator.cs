@@ -5,23 +5,42 @@ using System.Threading.Tasks;
 using Mosaic.Layers;
 
 namespace Mosaic.Creators {
-    internal sealed class TilesCreator : ICreator {
-        private readonly ISize _size;
-        private readonly Color[,] _pixels;
+    internal sealed class TilesCreator : ICreator, IDisposable {
+        private readonly Bitmap _bitmap;
+        private readonly Graphics _graphics;
+        private static readonly Pen PenBlack = new Pen(Color.Black);
+        private static readonly Brush BrushBlack = new SolidBrush(Color.Black);
+        private static readonly Font DefaultFont = new Font("Arial", 8);
 
-        public TilesCreator(ISize size) {
-            _size = size;
-            _pixels = new Color[size.Width, size.Height];
+        public TilesCreator(ISize size, Broadcast broadcast) {
+            _bitmap = new Bitmap(size.Width, size.Height);
+            _graphics = Graphics.FromImage(_bitmap);
         }
 
-        public async Task Set(ILayerResult input) => await Task.Run(() => {
-            var color = GetColor();
+        public Broadcast Broadcast { get; set; }
 
-            Parallel.For(0, input.Width, x => {
-                for (var y = 0; y < input.Height; y++) {
-                    _pixels[input.Left + x, input.Top + y] = color;
+        public async Task Set(ILayerResult input) => await Task.Run(() => {
+            var rect = new Rectangle(input.Left, input.Top, input.Width, input.Height);
+
+            var brush = new SolidBrush(GetColor());
+            var odds = $"{GetOdds():##0.0}";
+
+            lock (_graphics) {
+                _graphics.FillRectangle(brush, rect);
+                _graphics.DrawRectangle(PenBlack, rect);
+                _graphics.DrawString(odds, DefaultFont, BrushBlack, rect);
+            }
+
+            double GetOdds() {
+                var result = 0d;
+
+                for (var x = 0; x < input.Width; x++) {
+                    for (var y = 0; y < input.Height; y++) {
+                        result += input.Odds[x, y] * 100d;
+                    }
                 }
-            });
+                return result / (input.Width * input.Height);
+            }
 
             Color GetColor() {
                 var col = Convert.ToInt32(Math.Round(1d * input.Left / input.Width)) % 2;
@@ -44,14 +63,7 @@ namespace Mosaic.Creators {
 
             Broadcast.Start(this, $"Saving {filename}...");
             try {
-                using (var bmp = new Bitmap(_size.Width, _size.Height)) {
-                    for (var x = 0; x < _size.Width; x++) {
-                        for (var y = 0; y < _size.Height; y++) {
-                            bmp.SetPixel(x, y, _pixels[x, y]);
-                        }
-                    }
-                    bmp.Save(filename);
-                }
+                _bitmap.Save(filename);
             }
             finally {
                 Broadcast.End(this);
@@ -64,5 +76,10 @@ namespace Mosaic.Creators {
                 filename = Path.Combine(directory, $"{name}-layers.jpg");
             }
         });
+
+        public void Dispose() {
+            _graphics?.Dispose();
+            _bitmap?.Dispose();
+        }
     }
 }

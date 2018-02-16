@@ -12,6 +12,8 @@ namespace Mosaic.Creators {
             _pixels = new Color[size.Width, size.Height];
         }
 
+        public Broadcast Broadcast { get; set; }
+
         public async Task Set(ILayerResult input) => await Task.Factory.StartNew(() => {
             Parallel.For(0, input.Width, x => {
                 for (var y = 0; y < input.Height; y++) {

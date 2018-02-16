@@ -70,7 +70,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bots\BidimensionalArrayPool.cs" />
-    <Compile Include="Bots\BotQueue.cs" />
     <Compile Include="Bots\LayerResult.cs" />
     <Compile Include="Bots\PoolsHub.cs" />
     <Compile Include="Bots\SpitterBot.cs" />
@@ -78,7 +77,6 @@
     <Compile Include="Broadcast.cs" />
     <Compile Include="Creators\AnimatedGifCreator.cs" />
     <Compile Include="App.cs" />
-    <Compile Include="Bots\IBot.cs" />
     <Compile Include="Creators\ILayerResult.cs" />
     <Compile Include="Creators\TilesCreator.cs" />
     <Compile Include="IBroadcaster.cs" />
@@ -87,7 +85,7 @@
     <Compile Include="Layers\ISize.cs" />
     <Compile Include="Layers\Rectangle.cs" />
     <Compile Include="Layers\Window.cs" />
-    <Compile Include="Creators\Creators.cs" />
+    <Compile Include="Creators\CreatorsHub.cs" />
     <Compile Include="Creators\HeatmapCreator.cs" />
     <Compile Include="Creators\ICreator.cs" />
     <Compile Include="Layers\ILayer.cs" />
@@ -95,6 +93,10 @@
     <Compile Include="ImageDiscovery.cs" />
     <Compile Include="Layers\Image.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Queue\AgentStatuses.cs" />
+    <Compile Include="Queue\BusQueue.cs" />
+    <Compile Include="Queue\IBusAction.cs" />
+    <Compile Include="Queue\IBusAgent.cs" />
     <Compile Include="RGBColor.cs" />
     <Compile Include="Bots\ArrayOfArrayPool.cs" />
   </ItemGroup>

@@ -1,10 +1,14 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 using Mosaic.Bots;
+using Mosaic.Creators;
+using Mosaic.Layers;
+using Mosaic.Queue;
 
 namespace Mosaic {
     public sealed class App {
+        private Broadcast _broadcast;
+
         public string SearchDirectory { private get; set; }
         public string SearchPattern { private get; set; }
 
@@ -18,29 +22,52 @@ namespace Mosaic {
         public bool RenderTiles { private get; set; }
 
         public IBroadcaster Broadcaster {
-            private get => Broadcast.Instance;
-            set => Broadcast.Instance = value;
+            set => _broadcast = value is null ? null : new Broadcast(value);
         }
 
         public async Task Process() {
-            Broadcast.Start(this, "Mosaic");
+            _broadcast.Start(this, "Mosaic");
             try {
-                var discovery = new ImageDiscovery(SearchDirectory, SearchPattern);
+                var discovery = NewImageDiscovery();
                 var images = await discovery.Load();
 
-                using (var creators = new Creators.Creators(images, discovery.FirstFilename, RenderHeatmap, RenderAnimatedGif, RenderTiles)) {
-                    var queue = new BotQueue(creators);
-                    queue.Enqueue(new SpitterBot(images, queue));
+                using (var creators = NewCreatorsHub(images, discovery.FirstFilename)) {
+                    using (var queue = NewQueue()) {
+                        queue.Enqueue(new SpitterBot(images, queue, _broadcast, creators));
 
-                    await queue.WaitAll(ParallelBots);
+                        await queue.RunAndWait();
+                    }
 
                     var filename = Path.Combine(DestinyDirectory, DestinyFilename);
                     await creators.Flush(filename);
                 }
             }
             finally {
-                Broadcast.End(this);
+                _broadcast.End(this);
             }
+        }
+
+        private ImageDiscovery NewImageDiscovery()
+            => new ImageDiscovery(_broadcast) {
+                SearchDirectory = SearchDirectory,
+                SearchPattern = SearchPattern,
+            };
+
+        private CreatorsHub NewCreatorsHub(ISize size, string filename)
+            => new CreatorsHub(size, filename, _broadcast) {
+                RenderHeatmap = RenderHeatmap,
+                RenderAnimatedGif = RenderAnimatedGif,
+                RenderTiles = RenderTiles,
+            };
+
+        private BusQueue NewQueue() {
+            var result = new BusQueue {
+                Workers = ParallelBots
+            };
+            result.AgentReady += (sender, agent) => _broadcast.Start(agent, $"Agent {agent.Id:00}");
+            result.AgentWorked += (sender, agent) => _broadcast.Step(agent);
+            result.AgentShutdown += (sender, agent) => _broadcast.End(agent);
+            return result;
         }
     }
 }
