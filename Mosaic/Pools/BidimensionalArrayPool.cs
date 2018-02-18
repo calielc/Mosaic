@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 
-namespace Mosaic.Bots {
+namespace Mosaic.Pools {
     [DebuggerDisplay("Count: {_items.Count}")]
     internal sealed class BidimensionalArrayPool<T> {
         private readonly ConcurrentBag<Item> _items = new ConcurrentBag<Item>();

@@ -69,36 +69,38 @@
     <Reference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bots\BidimensionalArrayPool.cs" />
-    <Compile Include="Bots\LayerResult.cs" />
-    <Compile Include="Bots\PoolsHub.cs" />
-    <Compile Include="Bots\SpitterBot.cs" />
-    <Compile Include="Bots\CalcBot.cs" />
+    <Compile Include="Jobs\ILayerResult.cs" />
+    <Compile Include="Jobs\PaletteReducer.cs" />
+    <Compile Include="Pools\BidimensionalArrayPool.cs" />
+    <Compile Include="Jobs\LayerResult.cs" />
+    <Compile Include="Pools\PoolsHub.cs" />
+    <Compile Include="Jobs\SpitterBot.cs" />
+    <Compile Include="Jobs\CalcBot.cs" />
     <Compile Include="Broadcast.cs" />
-    <Compile Include="Creators\AnimatedGifCreator.cs" />
     <Compile Include="App.cs" />
-    <Compile Include="Creators\ILayerResult.cs" />
-    <Compile Include="Creators\TilesCreator.cs" />
+    <Compile Include="Jobs\TilesCreator.cs" />
     <Compile Include="IBroadcaster.cs" />
     <Compile Include="Layers\LayerCollection.cs" />
     <Compile Include="Layers\IRectangle.cs" />
     <Compile Include="Layers\ISize.cs" />
     <Compile Include="Layers\Rectangle.cs" />
     <Compile Include="Layers\Window.cs" />
-    <Compile Include="Creators\CreatorsHub.cs" />
-    <Compile Include="Creators\HeatmapCreator.cs" />
-    <Compile Include="Creators\ICreator.cs" />
+    <Compile Include="Jobs\HubCreator.cs" />
+    <Compile Include="Jobs\HeatmapCreator.cs" />
+    <Compile Include="Jobs\ICreator.cs" />
     <Compile Include="Layers\ILayer.cs" />
-    <Compile Include="Creators\RenderCreator.cs" />
+    <Compile Include="Jobs\RenderCreator.cs" />
     <Compile Include="ImageDiscovery.cs" />
     <Compile Include="Layers\Image.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Queue\AgentStatuses.cs" />
-    <Compile Include="Queue\BusQueue.cs" />
-    <Compile Include="Queue\IBusAction.cs" />
-    <Compile Include="Queue\IBusAgent.cs" />
+    <Compile Include="Queue\AgentStatus.cs" />
+    <Compile Include="Queue\ActivityQueue.cs" />
+    <Compile Include="Queue\IActivity.cs" />
+    <Compile Include="Queue\IActivityAgent.cs" />
+    <Compile Include="Queue\IActivityTicket.cs" />
+    <Compile Include="Queue\TicketStatus.cs" />
     <Compile Include="RGBColor.cs" />
-    <Compile Include="Bots\ArrayOfArrayPool.cs" />
+    <Compile Include="Pools\ArrayOfArrayPool.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

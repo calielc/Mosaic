@@ -23,7 +23,6 @@ namespace MosaicCmd {
                 ParallelBots = programArgs.Parallel,
 
                 RenderHeatmap = programArgs.Heatmap,
-                RenderAnimatedGif = programArgs.AnimatedGif,
                 RenderTiles = programArgs.Tiles,
 
                 SearchDirectory = programArgs.SearchDirectory,

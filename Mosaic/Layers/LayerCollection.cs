@@ -30,6 +30,8 @@ namespace Mosaic.Layers {
 
         public int Count => _layers.Count;
 
+        public IReadOnlyCollection<Image> AsImages => _rawImages;
+
         public IEnumerable<LayerCollection> SplitBy(int tiles) {
             return
             (

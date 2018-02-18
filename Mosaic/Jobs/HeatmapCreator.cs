@@ -2,18 +2,27 @@
 using System.IO;
 using System.Threading.Tasks;
 using Mosaic.Layers;
+using Mosaic.Queue;
 
-namespace Mosaic.Creators {
-    internal sealed class HeatmapCreator : ICreator {
+namespace Mosaic.Jobs {
+    internal sealed class HeatmapCreator : ICreator, IActivity {
         private readonly ISize _size;
+        private readonly string _filename;
+        private readonly Broadcast _broadcast;
         private readonly Color[,] _pixels;
 
-        public HeatmapCreator(ISize size, Broadcast broadcast) {
+        public HeatmapCreator(ISize size, string filename, Broadcast broadcast) {
             _size = size;
+            _filename = AdjustFilename();
+            _broadcast = broadcast;
             _pixels = new Color[size.Width, size.Height];
-        }
 
-        public Broadcast Broadcast { get; set; }
+            string AdjustFilename() {
+                var directory = Path.GetDirectoryName(filename);
+                var name = Path.GetFileNameWithoutExtension(filename);
+                return Path.Combine(directory, $"{name}-heat.jpg");
+            }
+        }
 
         public async Task Set(ILayerResult input) => await Task.Run(() => {
             Parallel.For(0, input.Width, x => {
@@ -36,10 +45,8 @@ namespace Mosaic.Creators {
             return Color.FromArgb(r, g, b);
         }
 
-        public async Task Flush(string filename) => await Task.Run(() => {
-            AdjustFilename();
-
-            Broadcast.Start(this, $"Saving {filename}...");
+        public async Task Run() => await Task.Run(() => {
+            _broadcast.Start(this, $"Saving {_filename}...");
             try {
                 using (var bmp = new Bitmap(_size.Width, _size.Height)) {
                     for (var x = 0; x < _size.Width; x++) {
@@ -48,17 +55,11 @@ namespace Mosaic.Creators {
                         }
                     }
 
-                    bmp.Save(filename);
+                    bmp.Save(_filename);
                 }
             }
             finally {
-                Broadcast.End(this);
-            }
-
-            void AdjustFilename() {
-                var directory = Path.GetDirectoryName(filename);
-                var name = Path.GetFileNameWithoutExtension(filename);
-                filename = Path.Combine(directory, $"{name}-heat.jpg");
+                _broadcast.End(this);
             }
         });
     }

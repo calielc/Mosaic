@@ -1,4 +1,4 @@
-﻿namespace Mosaic.Bots {
+﻿namespace Mosaic.Pools {
     internal static class PoolsHub {
         public static readonly ArrayOfArrayPool<double> ArrayOfArrayOfDouble = new ArrayOfArrayPool<double>();
 

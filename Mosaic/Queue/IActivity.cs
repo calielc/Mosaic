@@ -2,7 +2,7 @@
 
 namespace Mosaic.Queue
 {
-    internal interface IBusAction
+    internal interface IActivity
     {
         Task Run();
     }

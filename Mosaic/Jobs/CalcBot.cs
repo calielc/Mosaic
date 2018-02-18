@@ -3,12 +3,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Accord.MachineLearning;
-using Mosaic.Creators;
 using Mosaic.Layers;
+using Mosaic.Pools;
 using Mosaic.Queue;
 
-namespace Mosaic.Bots {
-    internal sealed class CalcBot : IBusAction {
+namespace Mosaic.Jobs {
+    internal sealed class CalcBot : IActivity {
         private readonly LayerCollection _layerCollection;
         private readonly Broadcast _broadcast;
         private readonly ICreator _creator;
@@ -80,15 +80,11 @@ namespace Mosaic.Bots {
 
             private void Fill(double[][] array) {
                 var tuples = _colors.Select((item, index) => (row: array[index], color: item));
-                Parallel.ForEach(tuples, tuple => {
-                    tuple.row[0] = tuple.color.R;
-                    tuple.row[1] = tuple.color.G;
-                    tuple.row[2] = tuple.color.B;
-                });
+                Parallel.ForEach(tuples, tuple => tuple.color.CopyTo(tuple.row));
             }
 
             private void Flush(KMeansClusterCollection.KMeansCluster cluster) {
-                _layerResult.Set(_x, _y, new RGBColor((byte)cluster.Centroid[0], (byte)cluster.Centroid[1], (byte)cluster.Centroid[2]));
+                _layerResult.Set(_x, _y, RGBColor.CopyFrom(cluster.Centroid));
                 _layerResult.Set(_x, _y, cluster.Proportion);
             }
         }

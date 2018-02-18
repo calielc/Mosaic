@@ -6,8 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using ImageMagick;
 
-namespace Mosaic.Creators {
-    internal sealed class AnimatedGifCreator : ICreator, IDisposable {
+namespace Mosaic.Jobs {
+    internal sealed class AnimatedGifCreator : IDisposable {
         private readonly Dictionary<double, Bitmap> _steps;
 
         public AnimatedGifCreator(string filename, Broadcast broadcast) {

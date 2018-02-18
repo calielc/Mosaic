@@ -49,5 +49,14 @@ namespace Mosaic {
         public static implicit operator Color(RGBColor self) => Color.FromArgb(self.R, self.G, self.B);
 
         public static implicit operator RGBColor(Color self) => new RGBColor(self.R, self.G, self.B);
+
+        public double[] CopyTo(double[] array) {
+            array[0] = _r;
+            array[1] = _g;
+            array[2] = _b;
+            return array;
+        }
+
+        public static RGBColor CopyFrom(double[] array) => new RGBColor((byte)array[0], (byte)array[1], (byte)array[2]);
     }
 }

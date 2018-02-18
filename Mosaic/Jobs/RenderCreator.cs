@@ -1,18 +1,21 @@
 ﻿using System.Drawing;
 using System.Threading.Tasks;
 using Mosaic.Layers;
+using Mosaic.Queue;
 
-namespace Mosaic.Creators {
-    internal sealed class RenderCreator : ICreator {
+namespace Mosaic.Jobs {
+    internal sealed class RenderCreator : ICreator, IActivity {
         private readonly ISize _size;
+        private readonly Broadcast _broadcast;
         private readonly Color[,] _pixels;
+        private readonly string _filename;
 
-        public RenderCreator(ISize size) {
+        public RenderCreator(ISize size, string filename, Broadcast broadcast) {
             _size = size;
+            _filename = filename;
+            _broadcast = broadcast;
             _pixels = new Color[size.Width, size.Height];
         }
-
-        public Broadcast Broadcast { get; set; }
 
         public async Task Set(ILayerResult input) => await Task.Factory.StartNew(() => {
             Parallel.For(0, input.Width, x => {
@@ -22,8 +25,8 @@ namespace Mosaic.Creators {
             });
         });
 
-        public async Task Flush(string filename) => await Task.Factory.StartNew(() => {
-            Broadcast.Start(this, $"Saving {filename}...");
+        public async Task Run() => await Task.Factory.StartNew(() => {
+            _broadcast.Start(this, $"Saving {_filename}...");
             try {
                 using (var bmp = new Bitmap(_size.Width, _size.Height)) {
                     for (var x = 0; x < _size.Width; x++) {
@@ -31,11 +34,11 @@ namespace Mosaic.Creators {
                             bmp.SetPixel(x, y, _pixels[x, y]);
                         }
                     }
-                    bmp.Save(filename);
+                    bmp.Save(_filename);
                 }
             }
             finally {
-                Broadcast.End(this);
+                _broadcast.End(this);
             }
         });
     }

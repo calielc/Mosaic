@@ -1,8 +1,8 @@
 ﻿using System;
-using Mosaic.Creators;
 using Mosaic.Layers;
+using Mosaic.Pools;
 
-namespace Mosaic.Bots {
+namespace Mosaic.Jobs {
     internal readonly struct LayerResult : ILayerResult, IDisposable {
         private readonly IRectangle _rectangle;
         private readonly BidimensionalArrayPool<RGBColor>.Item _colors;

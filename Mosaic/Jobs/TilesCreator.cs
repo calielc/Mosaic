@@ -3,21 +3,32 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using Mosaic.Layers;
+using Mosaic.Queue;
 
-namespace Mosaic.Creators {
-    internal sealed class TilesCreator : ICreator, IDisposable {
+namespace Mosaic.Jobs {
+    internal sealed class TilesCreator : ICreator, IActivity, IDisposable {
+        private readonly string _filename;
+        private readonly Broadcast _broadcast;
         private readonly Bitmap _bitmap;
         private readonly Graphics _graphics;
         private static readonly Pen PenBlack = new Pen(Color.Black);
         private static readonly Brush BrushBlack = new SolidBrush(Color.Black);
         private static readonly Font DefaultFont = new Font("Arial", 8);
 
-        public TilesCreator(ISize size, Broadcast broadcast) {
+        public TilesCreator(ISize size, string filename, Broadcast broadcast) {
+            _filename = AdjustFilename();
+            _broadcast = broadcast;
+
             _bitmap = new Bitmap(size.Width, size.Height);
             _graphics = Graphics.FromImage(_bitmap);
-        }
 
-        public Broadcast Broadcast { get; set; }
+            string AdjustFilename() {
+                var directory = Path.GetDirectoryName(filename);
+                var name = Path.GetFileNameWithoutExtension(filename);
+
+                return Path.Combine(directory, $"{name}-layers.jpg");
+            }
+        }
 
         public async Task Set(ILayerResult input) => await Task.Run(() => {
             var rect = new Rectangle(input.Left, input.Top, input.Width, input.Height);
@@ -58,22 +69,13 @@ namespace Mosaic.Creators {
             }
         });
 
-        public async Task Flush(string filename) => await Task.Factory.StartNew(() => {
-            AdjustFilename();
-
-            Broadcast.Start(this, $"Saving {filename}...");
+        public async Task Run() => await Task.Factory.StartNew(() => {
+            _broadcast.Start(this, $"Saving {_filename}...");
             try {
-                _bitmap.Save(filename);
+                _bitmap.Save(_filename);
             }
             finally {
-                Broadcast.End(this);
-            }
-
-            void AdjustFilename() {
-                var directory = Path.GetDirectoryName(filename);
-                var name = Path.GetFileNameWithoutExtension(filename);
-
-                filename = Path.Combine(directory, $"{name}-layers.jpg");
+                _broadcast.End(this);
             }
         });
 
