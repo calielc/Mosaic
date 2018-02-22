@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace Mosaic.Queue
+namespace ActivityQueue
 {
-    internal interface IActivity
+    public interface IActivity
     {
         Task Run();
     }

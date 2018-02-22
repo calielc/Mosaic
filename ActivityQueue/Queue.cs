@@ -6,8 +6,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Mosaic.Queue {
-    internal sealed class ActivityQueue : IDisposable {
+namespace ActivityQueue {
+    public sealed class Queue : IDisposable {
         private static readonly TimeSpan TimeToWait = TimeSpan.FromSeconds(2);
 
         private readonly BlockingCollection<Ticket> _queue = new BlockingCollection<Ticket>();
@@ -38,7 +38,15 @@ namespace Mosaic.Queue {
             return ticket;
         }
 
-        public ActivityQueue Run() {
+        public void AddSubtask(IActivity parent, IEnumerable<IActivity> activities) {
+            var parentTicket = _tickets.SingleOrDefault(item => item.Activity == parent) ?? throw new ArgumentNullException(nameof(parent));
+
+            foreach (var activity in activities) {
+                _queue.Add(new Ticket(this, parentTicket, activity));
+            }
+        }
+
+        public Queue Run() {
             _agents = new ConcurrentBag<Agent>(Enumerable.Range(0, Workers).Select(id => new Agent(id, this)));
 
             _isWaiting = false;
@@ -63,14 +71,12 @@ namespace Mosaic.Queue {
         public event AgentStatusHandler AgentWorked;
         public event AgentStatusHandler AgentIdle;
         public event AgentStatusHandler AgentShutdown;
-        public delegate void AgentStatusHandler(ActivityQueue sender, IActivityAgent agent);
 
         public event TicketStatusHandler TicketChange;
         public event TicketStatusHandler TicketRunning;
         public event TicketStatusHandler TicketRan;
         public event TicketStatusHandler TicketWaitingChild;
         public event TicketStatusHandler TicketClosed;
-        internal delegate void TicketStatusHandler(ActivityQueue sender, IActivityTicket ticket);
 
         private bool IsAllJobDone() {
             if (_agents.Any(agent => agent.Status <= AgentStatus.Worked) || _queue.Any()) {
@@ -133,9 +139,9 @@ namespace Mosaic.Queue {
 
         [DebuggerDisplay("Id: {Id}, Status: {Status}")]
         private sealed class Agent : IActivityAgent {
-            private readonly ActivityQueue _owner;
+            private readonly Queue _owner;
 
-            public Agent(int id, ActivityQueue owner) {
+            public Agent(int id, Queue owner) {
                 Id = id;
                 _owner = owner;
             }
@@ -181,19 +187,19 @@ namespace Mosaic.Queue {
 
         [DebuggerDisplay("Status: {Status}, Activity: {Activity}")]
         private sealed class Ticket : IActivityTicket {
-            private readonly ActivityQueue _owner;
+            private readonly Queue _owner;
             private readonly Ticket _parent;
             private readonly ConcurrentBag<Ticket> _childs = new ConcurrentBag<Ticket>();
             private readonly ConcurrentBag<Ticket> _after = new ConcurrentBag<Ticket>();
 
-            internal Ticket(ActivityQueue owner, IActivity activity) {
+            internal Ticket(Queue owner, IActivity activity) {
                 _owner = owner;
                 _owner._tickets.Add(this);
 
                 Activity = activity;
             }
 
-            internal Ticket(ActivityQueue owner, Ticket parent, IActivity activity) {
+            internal Ticket(Queue owner, Ticket parent, IActivity activity) {
                 _owner = owner;
                 _owner._tickets.Add(this);
 
@@ -207,17 +213,13 @@ namespace Mosaic.Queue {
 
             public IActivity Activity { get; }
 
-            public Ticket Parent => _parent;
-
-            public IReadOnlyCollection<Ticket> Childs => _childs;
-
             public IReadOnlyCollection<Ticket> After => _after;
 
-            IActivityTicket IActivityTicket.Parent => _parent;
-
-            IReadOnlyCollection<IActivityTicket> IActivityTicket.Childs => _childs;
-
-            IReadOnlyCollection<IActivityTicket> IActivityTicket.After => _after;
+            public event TicketStatusHandler OnChange;
+            public event TicketStatusHandler OnRunning;
+            public event TicketStatusHandler OnRan;
+            public event TicketStatusHandler OnWaitingChildren;
+            public event TicketStatusHandler OnClosed;
 
             public async Task Run() {
                 ChangeStatus(TicketStatus.Running);
@@ -234,8 +236,8 @@ namespace Mosaic.Queue {
                     ChangeStatus(TicketStatus.Closed);
                 }
                 else {
-                    var status = _childs.All(ticket => ticket.Status == TicketStatus.Closed) 
-                        ? TicketStatus.Closed 
+                    var status = _childs.All(ticket => ticket.Status == TicketStatus.Closed)
+                        ? TicketStatus.Closed
                         : TicketStatus.WaitingChildren;
                     ChangeStatus(status);
                 }
@@ -244,17 +246,49 @@ namespace Mosaic.Queue {
             }
 
             private void ChangeStatus(TicketStatus status) {
-                if (status != Status) {
-                    Status = status;
-                    _owner.FireActivityChange(this);
+                if (status == Status)
+                    return;
+
+                Status = status;
+
+                OnChange?.Invoke(_owner, this);
+                switch (status) {
+                    case TicketStatus.Running:
+                        OnRunning?.Invoke(_owner, this);
+                        break;
+                    case TicketStatus.Ran:
+                        OnRan?.Invoke(_owner, this);
+                        break;
+                    case TicketStatus.WaitingChildren:
+                        OnWaitingChildren?.Invoke(_owner, this);
+                        break;
+                    case TicketStatus.Closed:
+                        OnClosed?.Invoke(_owner, this);
+                        break;
                 }
+
+                _owner.FireActivityChange(this);
             }
 
             public IActivityTicket Then(IActivity activity) {
                 var result = new Ticket(_owner, _parent, activity);
                 _after.Add(result);
+
                 return result;
             }
+
+            public IActivityTicket Then(Func<IActivity, IActivity> action) {
+                var newActivity = action(this.Activity);
+
+                var result = new Ticket(_owner, _parent, newActivity);
+                _after.Add(result);
+
+                return result;
+            }
+
+            IActivityTicket IActivityTicket.Parent => _parent;
+            IReadOnlyCollection<IActivityTicket> IActivityTicket.Childs => _childs;
+            IReadOnlyCollection<IActivityTicket> IActivityTicket.After => _after;
         }
     }
 }

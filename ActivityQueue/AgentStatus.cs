@@ -1,5 +1,5 @@
-namespace Mosaic.Queue {
-    internal enum AgentStatus {
+namespace ActivityQueue {
+    public enum AgentStatus {
         Ready = 0,
         Working = 10,
         Worked = 11,

@@ -5,6 +5,8 @@ using Mosaic;
 
 namespace MosaicCmd {
     public sealed class Broadcaster : IBroadcaster {
+        private static readonly TimeSpan RefreshRate = TimeSpan.FromSeconds(1);
+
         private readonly ConcurrentDictionary<object, LineState> _lineStates = new ConcurrentDictionary<object, LineState>();
         private readonly string[] _animationChars = { "|", "/", "-", "\\" };
 
@@ -16,6 +18,9 @@ namespace MosaicCmd {
                         : _lineStates.Values.Max(item => item.Top) + 1;
                     lineState = _lineStates[sender] = new LineState(top, text.Length + 1);
                 }
+                else {
+                    lineState.Perc = lineState.Step = 0;
+                }
 
                 WriteText(0, lineState.Top, ConsoleColor.Yellow, text);
             }
@@ -25,22 +30,27 @@ namespace MosaicCmd {
             var lineState = _lineStates[sender];
             lineState.Step += 1;
 
+            if (DateTime.Now - lineState.LastRefresh < RefreshRate) {
+                return;
+            }
+
             lock (this) {
                 WriteText(lineState.Left, lineState.Top, ConsoleColor.White, $"{_animationChars[lineState.Step % _animationChars.Length]} ({lineState.Step})");
+                lineState.LastRefresh = DateTime.Now;
             }
         }
 
         public void Progress(object sender, double perc) {
             var lineState = _lineStates[sender];
+            lineState.Perc = perc;
 
-            if (!(perc - lineState.Perc > 0.05)) {
+            if (DateTime.Now - lineState.LastRefresh < RefreshRate) {
                 return;
             }
 
-            lineState.Perc = perc;
-
             lock (this) {
                 WriteText(lineState.Left, lineState.Top, ConsoleColor.White, $"{lineState.Perc,4:p}");
+                lineState.LastRefresh = DateTime.Now;
             }
 
         }
@@ -71,12 +81,15 @@ namespace MosaicCmd {
                 Top = top;
                 Left = left;
                 Perc = 0;
+                Step = 0;
             }
 
             public int Top { get; }
             public int Left { get; }
             public double Perc { get; set; }
             public int Step { get; set; }
+
+            public DateTime? LastRefresh { get; set; }
         }
     }
 }

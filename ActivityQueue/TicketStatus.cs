@@ -1,4 +1,4 @@
-namespace Mosaic.Queue {
+namespace ActivityQueue {
     public enum TicketStatus {
         Queued,
         Running,

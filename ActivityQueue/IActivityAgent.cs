@@ -1,6 +1,6 @@
-namespace Mosaic.Queue
+namespace ActivityQueue
 {
-    internal interface IActivityAgent
+    public interface IActivityAgent
     {
         int Id { get; }
 
