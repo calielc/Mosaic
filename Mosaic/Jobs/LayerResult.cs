@@ -1,19 +1,24 @@
 ﻿using System;
-using Mosaic.Layers;
+using Mosaic.Imaging;
 using Mosaic.Pools;
+using Mosaic.Savers;
 
 namespace Mosaic.Jobs {
-    internal readonly struct LayerResult : ILayerResult, IDisposable {
+    internal class LayerResult : ILayerResult, IDisposable {
         private readonly IRectangle _rectangle;
         private readonly BidimensionalArrayPool<RGBColor>.Item _colors;
-        private readonly BidimensionalArrayPool<double>.Item _odds;
 
         public LayerResult(IRectangle rectangle) {
             _rectangle = rectangle;
 
             _colors = PoolsHub.BidimensionalArrayOfRGBColor.Rent(rectangle.Width, rectangle.Height);
-            _odds = PoolsHub.BidimensionalArrayOfDouble.Rent(rectangle.Width, rectangle.Height);
         }
+
+        public int Order { get; set; }
+
+        public string Name { get; set; }
+
+        public double Score { get; set; }
 
         public int Left => _rectangle.Left;
         public int Top => _rectangle.Top;
@@ -21,16 +26,13 @@ namespace Mosaic.Jobs {
         public int Width => _rectangle.Width;
         public int Height => _rectangle.Height;
 
-        RGBColor[,] ILayerResult.Colors => _colors;
-        double[,] ILayerResult.Odds => _odds;
-
         public void Set(int x, int y, RGBColor color) => _colors.Array[x, y] = color;
 
-        public void Set(int x, int y, double odd) => _odds.Array[x, y] = odd;
+        RGBColor[,] ILayerResult.Colors => _colors;
 
         void IDisposable.Dispose() {
             _colors.Return();
-            _odds.Return();
         }
+
     }
 }

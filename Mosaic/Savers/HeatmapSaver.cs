@@ -1,17 +1,16 @@
 ﻿using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
-using Mosaic.Layers;
-using Mosaic.Queue;
+using Mosaic.Imaging;
 
-namespace Mosaic.Jobs {
-    internal sealed class HeatmapCreator : ICreator, IActivity {
+namespace Mosaic.Savers {
+    internal sealed class HeatmapSaver : ISaver {
         private readonly ISize _size;
         private readonly string _filename;
         private readonly Broadcast _broadcast;
         private readonly Color[,] _pixels;
 
-        public HeatmapCreator(ISize size, string filename, Broadcast broadcast) {
+        public HeatmapSaver(ISize size, string filename, Broadcast broadcast) {
             _size = size;
             _filename = AdjustFilename();
             _broadcast = broadcast;
@@ -25,10 +24,10 @@ namespace Mosaic.Jobs {
         }
 
         public async Task Set(ILayerResult input) => await Task.Run(() => {
+            var color = Interpolate(input.Score);
+
             Parallel.For(0, input.Width, x => {
                 for (var y = 0; y < input.Height; y++) {
-                    var color = Interpolate(input.Odds[x, y]);
-
                     _pixels[input.Left + x, input.Top + y] = color;
                 }
             });

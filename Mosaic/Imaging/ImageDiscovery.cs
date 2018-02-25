@@ -2,9 +2,8 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Mosaic.Layers;
 
-namespace Mosaic {
+namespace Mosaic.Imaging {
     internal sealed class ImageDiscovery {
         private readonly Broadcast _broadcast;
 
@@ -17,7 +16,7 @@ namespace Mosaic {
 
         public string FirstFilename { get; private set; }
 
-        public async Task<LayerCollection> Load() => await Task.Factory.StartNew(() => {
+        public async Task<ImageCollection> Load() => await Task.Factory.StartNew(() => {
             var filenames = Directory.GetFiles(SearchDirectory, SearchPattern);
 
             FirstFilename = filenames.First();
@@ -33,7 +32,7 @@ namespace Mosaic {
                     _broadcast.Progress(this, items.Count / total);
                 });
 
-                return new LayerCollection(items);
+                return new ImageCollection(items);
             }
             finally {
                 _broadcast.End(this);

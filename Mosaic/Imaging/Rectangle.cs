@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Mosaic.Layers {
+namespace Mosaic.Imaging {
     [DebuggerDisplay("Left: {Left}, Top: {Top}, Width: {Width}, Height: {Height}")]
     internal sealed class Rect : IRectangle {
         private readonly int _left;

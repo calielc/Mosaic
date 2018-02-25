@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 
-namespace Mosaic {
+namespace Mosaic.Imaging {
     [DebuggerDisplay("[R: {_r}, G: {_g}, B: {_b}]")]
     public readonly struct RGBColor : IEquatable<RGBColor> {
         public static readonly double MaxDelta = new RGBColor(0, 0, 0) - new RGBColor(255, 255, 255);

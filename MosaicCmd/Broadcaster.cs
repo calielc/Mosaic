@@ -11,12 +11,13 @@ namespace MosaicCmd {
         private readonly string[] _animationChars = { "|", "/", "-", "\\" };
 
         public void Start(object sender, string text) {
+            text += " => ";
             lock (this) {
                 if (_lineStates.TryGetValue(sender, out var lineState) == false) {
                     var top = _lineStates.Count == 0
                         ? 0
                         : _lineStates.Values.Max(item => item.Top) + 1;
-                    lineState = _lineStates[sender] = new LineState(top, text.Length + 1);
+                    lineState = _lineStates[sender] = new LineState(top, text.Length);
                 }
                 else {
                     lineState.Perc = lineState.Step = 0;

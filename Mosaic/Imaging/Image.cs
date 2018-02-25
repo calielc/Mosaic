@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Mosaic.Layers {
-    internal sealed class Image : ILayer {
+namespace Mosaic.Imaging {
+    [DebuggerDisplay("Name: {Name}, Width: {Width}: Height: {Height}")]
+    internal sealed class Image : IEquatable<Image>, ISize {
         private readonly string _filename;
         private readonly RGBColor[,] _pixels;
-        private RGBColor[,] _reduced;
         private readonly string _name;
         private readonly int _width;
         private readonly int _height;
+        private RGBColor[,] _reduced;
 
         public Image(string filename) {
             _filename = filename;
@@ -48,19 +50,23 @@ namespace Mosaic.Layers {
                     }
                 });
             }
+
+            Raw = Reduced = new PixelIndexer(_pixels);
         }
 
         public string Name => _name;
+
         public int Width => _width;
         public int Height => _height;
 
-        public RGBColor this[int x, int y] => _pixels[x, y];
+        public PixelIndexer Raw { get; }
+        public PixelIndexer Reduced { get; private set; }
 
-        int IRectangle.Left => 0;
-        int IRectangle.Top => 0;
+        public RGBColor this[int x, int y] => _pixels[x, y];
 
         public void Reduce(IReadOnlyDictionary<RGBColor, RGBColor> palette) {
             _reduced = new RGBColor[_width, _height];
+
             using (var bmp = new Bitmap(_width, _height)) {
                 for (var x = 0; x < _width; x++) {
                     for (var y = 0; y < _height; y++) {
@@ -69,16 +75,42 @@ namespace Mosaic.Layers {
 
                         bmp.SetPixel(x, y, reduced);
                     }
-                };
+                }
 
                 var directory = Path.GetDirectoryName(_filename);
                 var filename = Path.GetFileName(_filename);
 
-                directory = Path.Combine(directory, "reduced");
+                directory = Path.Combine(directory, $"reduced-{palette.Count}");
                 Directory.CreateDirectory(directory);
 
                 bmp.Save(Path.Combine(directory, filename));
             }
+
+            Reduced = new PixelIndexer(_reduced);
+        }
+
+        public bool Equals(Image other) {
+            if (other is null) {
+                return false;
+            }
+
+            return ReferenceEquals(this, other) || string.Equals(_filename, other._filename);
+        }
+
+        public override bool Equals(object obj) {
+            if (obj is null) {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj)) {
+                return true;
+            }
+
+            return obj is Image image && Equals(image);
+        }
+
+        public override int GetHashCode() {
+            return _filename != null ? _filename.GetHashCode() : 0;
         }
     }
 }

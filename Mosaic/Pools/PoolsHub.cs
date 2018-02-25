@@ -1,4 +1,6 @@
-﻿namespace Mosaic.Pools {
+﻿using Mosaic.Imaging;
+
+namespace Mosaic.Pools {
     internal static class PoolsHub {
         public static readonly ArrayOfArrayPool<double> ArrayOfArrayOfDouble = new ArrayOfArrayPool<double>();
 

@@ -1,9 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using ActivityQueue;
+using Mosaic.Imaging;
 using Mosaic.Jobs;
-using Mosaic.Layers;
-using Mosaic.Queue;
+using Mosaic.Savers;
 
 namespace Mosaic {
     public sealed class App {
@@ -33,9 +34,13 @@ namespace Mosaic {
                 var queue = NewQueue();
                 var hub = NewHub(images, queue);
                 try {
-                    queue.Run()
+                    queue
                         .Add(new PaletteReducer(images, _broadcast))
-                        .Then(new SpitterBot(images, queue, _broadcast, hub))
+                        .Then(new SplitterBot(images, queue, _broadcast))
+                        .Then(bot => {
+                            var splitterBot = (SplitterBot)bot;
+                            return new PickerBot(splitterBot.Cells, hub, _broadcast);
+                        })
                         .Then(hub);
 
                     await queue.Wait();
@@ -56,22 +61,22 @@ namespace Mosaic {
                 SearchPattern = SearchPattern,
             };
 
-        private HubCreator NewHub(ISize size, ActivityQueue queue) {
+        private HubSaver NewHub(ISize size, Queue queue) {
             var filename = Path.Combine(DestinyDirectory, DestinyFilename);
-            return new HubCreator(size, filename, _broadcast, queue) {
+            return new HubSaver(size, filename, _broadcast, queue) {
                 RenderHeatmap = RenderHeatmap,
                 RenderTiles = RenderTiles,
             };
         }
 
-        private ActivityQueue NewQueue() {
-            var result = new ActivityQueue {
+        private Queue NewQueue() {
+            var result = new Queue {
                 Workers = Math.Min(ParallelBots, Environment.ProcessorCount)
             };
             result.AgentReady += (sender, agent) => _broadcast.Start(agent, $"Agent {agent.Id:00}");
             result.AgentWorked += (sender, agent) => _broadcast.Step(agent);
             result.AgentShutdown += (sender, agent) => _broadcast.End(agent);
-            return result;
+            return result.Run();
         }
     }
 }

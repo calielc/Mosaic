@@ -1,16 +1,15 @@
 ﻿using System.Drawing;
 using System.Threading.Tasks;
-using Mosaic.Layers;
-using Mosaic.Queue;
+using Mosaic.Imaging;
 
-namespace Mosaic.Jobs {
-    internal sealed class RenderCreator : ICreator, IActivity {
+namespace Mosaic.Savers {
+    internal sealed class PuzzleSaver : ISaver {
         private readonly ISize _size;
         private readonly Broadcast _broadcast;
         private readonly Color[,] _pixels;
         private readonly string _filename;
 
-        public RenderCreator(ISize size, string filename, Broadcast broadcast) {
+        public PuzzleSaver(ISize size, string filename, Broadcast broadcast) {
             _size = size;
             _filename = filename;
             _broadcast = broadcast;
