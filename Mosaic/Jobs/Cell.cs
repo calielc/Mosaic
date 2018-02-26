@@ -12,7 +12,6 @@ namespace Mosaic.Jobs {
         private readonly IRectangle _rect;
         private Neighbours _neighbours;
         private Frame[] _frames;
-        private Frame _bestChoice;
 
         public Cell(int x, int y, ImageCollection images, IRectangle rect) {
             X = x;
@@ -26,9 +25,13 @@ namespace Mosaic.Jobs {
 
         public bool IsResolved { get; private set; }
 
-        public double Score => _bestChoice?.Score ?? -1d;
+        internal Frame SelectFrame { get; private set; }
+
+        public double Score => SelectFrame?.Score ?? -1d;
 
         public void Prepare(IReadOnlyCollection<Cell> cells, Action<int, double> broadcast) {
+            Debug.Assert(IsResolved == false, "IsResolved == false");
+
             _neighbours = new Neighbours(this, cells);
 
             _frames = _images
@@ -44,53 +47,42 @@ namespace Mosaic.Jobs {
                 broadcast(++frameCount, frameDivisor);
             }
 
-            _bestChoice = _frames.OrderByDescending(frame => frame.Score).FirstOrDefault();
+            SelectFrame = _frames.OrderByDescending(frame => frame.Score).First();
         }
 
-        public void UpdateBestChoice() {
-            if (IsResolved) {
+        public void UpdateNeighbourhood() {
+            Debug.Assert(IsResolved == false, "IsResolved == false");
+
+            if (_neighbours.All(cell => cell.IsResolved == false)) {
+                SelectFrame = null;
                 return;
             }
 
-            IEnumerable<Frame> frames = _frames;
-
-            CompareNeighbour(_neighbours.Left, neighbour => neighbour.Right, frame => frame.Left);
-            CompareNeighbour(_neighbours.Right, neighbour => neighbour.Left, frame => frame.Right);
-
-            CompareNeighbour(_neighbours.Top, neighbour => neighbour.Bottom, frame => frame.Top);
-            CompareNeighbour(_neighbours.Bottom, neighbour => neighbour.Top, frame => frame.Bottom);
-
-            _bestChoice = frames.OrderByDescending(frame => frame.Score).FirstOrDefault();
-
-            void CompareNeighbour(Cell neighbour, Func<FrameBorders, FrameBorder> getNeighbourBorder, Func<FrameBorders, FrameBorder> getFrameBorder) {
-                if (neighbour == null || neighbour.IsResolved == false) {
-                    return;
-                }
-
-                var neighbourBorder = getNeighbourBorder(neighbour._bestChoice.Borders);
-
-                frames = frames.Where(frame => getFrameBorder(frame.Borders) % neighbourBorder > 90).ToArray();
+            foreach (var frame in _frames) {
+                frame.UpdateNeighbourhood(_neighbours);
             }
+
+            SelectFrame = _frames.OrderByDescending(frame => frame.Score).First();
         }
 
-        public void Resolve(ISaver saver, int order) {
+        public void Pick(ISaver saver, int order) {
             IsResolved = true;
-            var bestChoice = _bestChoice;
+            var choice = SelectFrame;
 
             double score;
-            if (bestChoice == null) {
-                bestChoice = _frames.OrderByDescending(frame => frame.Score).First();
-                score = bestChoice.Score / 100d;
+            if (choice == null) {
+                choice = _frames.OrderByDescending(frame => frame.Score).First();
+                score = choice.Score / 100d;
             }
             else {
-                score = bestChoice.Score;
+                score = choice.Score;
             }
 
             using (var result = new LayerResult(_rect)) {
                 result.Order = order;
-                result.Name = bestChoice.Name;
+                result.Name = choice.Name;
                 result.Score = score;
-                bestChoice.CopyTo(result);
+                choice.CopyTo(result);
 
                 saver.Set(result);
             }

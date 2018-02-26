@@ -54,7 +54,7 @@ namespace Mosaic.Savers {
                 var magickImages = _frames
                     .OrderBy(pair => pair.Key)
                     .Select(pair => new MagickImage(pair.Value) {
-                        AnimationDelay = 75
+                        AnimationDelay = 25
                     });
 
                 using (var magickImageCollection = new MagickImageCollection(magickImages)) {

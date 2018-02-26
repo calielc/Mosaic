@@ -6,37 +6,45 @@ using Mosaic.Savers;
 
 namespace Mosaic.Jobs {
     internal sealed class PickerBot : IActivity {
-        private readonly IReadOnlyCollection<Cell> _bots;
+        private readonly IReadOnlyCollection<Cell> _cells;
         private readonly ISaver _saver;
         private readonly Broadcast _broadcast;
 
-        public PickerBot(IReadOnlyCollection<Cell> bots, ISaver saver, Broadcast broadcast) {
-            _bots = bots;
+        public PickerBot(IReadOnlyCollection<Cell> cells, ISaver saver, Broadcast broadcast) {
+            _cells = cells;
             _saver = saver;
             _broadcast = broadcast;
         }
 
         public async Task Run() => await Task.Run(() => {
-            _broadcast.Start(this, $"Resolving {_bots.Count} bots");
+            _broadcast.Start(this, $"Resolving {_cells.Count} cells");
             try {
+                var unresolved = new LinkedList<Cell>(_cells);
+
                 var count = 0;
-                double divisor = _bots.Count;
+                double divisor = unresolved.Count;
 
-                var unresolved = _bots.Where(bot => bot.IsResolved == false).ToArray();
-                while (unresolved.Any()) {
-                    Parallel.ForEach(unresolved, cell => cell.UpdateBestChoice());
+                Pick();
 
-                    var bestChoice = unresolved.OrderByDescending(bot => bot.Score).First();
-                    bestChoice.Resolve(_saver, count);
+                while (unresolved.Count > 0) {
+                    Parallel.ForEach(unresolved, cell => cell.UpdateNeighbourhood());
+                    Pick();
+                }
+
+                void Pick() {
+                    var bestChoice = unresolved.OrderByDescending(cell => cell.Score).First();
+                    bestChoice.Pick(_saver, count);
+
+                    unresolved.Remove(bestChoice);
 
                     _broadcast.Progress(this, ++count / divisor);
 
-                    unresolved = unresolved.Where(bot => bot.IsResolved == false).ToArray();
                 }
             }
             finally {
                 _broadcast.End(this);
             }
+
         });
     }
 }

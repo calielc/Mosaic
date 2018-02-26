@@ -10,7 +10,7 @@ namespace Mosaic.Jobs {
     internal sealed class PaletteReducer : IActivity {
         private readonly ImageCollection _images;
         private readonly Broadcast _broadcast;
-        private const int MaxColor = 256;
+        private const int MaxColor = 512;
 
         public PaletteReducer(ImageCollection images, Broadcast broadcast) {
             _images = images;

@@ -8,7 +8,7 @@ using Mosaic.Imaging;
 
 namespace Mosaic.Jobs {
     internal sealed class SplitterBot : IActivity {
-        private const int PuzzleSize = 96;
+        private const int PuzzleSize = 12;
         private readonly ImageCollection _images;
         private readonly Broadcast _broadcast;
         private readonly Queue _queue;
@@ -34,7 +34,7 @@ namespace Mosaic.Jobs {
                 Parallel.ForEach(bots, bot => _bots.Add(bot));
 
                 var groupActivities = new GroupActivities(_queue) {
-                    Activities = _bots.Select(cell => new LoaderActivity(cell, _bots, _broadcast))
+                    Activities = _bots.Select(cell => new LoaderActivity(cell, _bots, _broadcast)).ToArray()
                 };
                 _queue.AddSubtask(this, groupActivities);
             }

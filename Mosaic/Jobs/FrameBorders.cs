@@ -1,7 +1,8 @@
-﻿using Mosaic.Imaging;
+﻿using Mosaic.Extensions;
+using Mosaic.Imaging;
 
 namespace Mosaic.Jobs {
-    internal readonly struct FrameBorders {
+    internal readonly struct FrameBorders : IDirection<FrameBorder> {
         public FrameBorders(Image image, IRectangle rect) {
             Left = FrameBorder.FromLeft(image, rect);
             Right = FrameBorder.FromRight(image, rect);
@@ -17,13 +18,12 @@ namespace Mosaic.Jobs {
 
         public FrameBorder Left { get; }
 
-        public static double operator %(FrameBorders self, FrameBorders other) {
-            var left = 1d / (self.Left % other.Left);
-            var right = 1d / (self.Right % other.Right);
-            var top = 1d / (self.Top % other.Top);
-            var bottom = 1d / (self.Bottom % other.Bottom);
-
-            return 4d / (left + right + top + bottom);
-        }
+        public static double operator %(FrameBorders self, FrameBorders other)
+            => new[] {
+                self.Left % other.Left,
+                self.Right % other.Right,
+                self.Top % other.Top,
+                self.Bottom % other.Bottom,
+            }.HarmonicAverage();
     }
 }

@@ -1,14 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Mosaic.Extensions;
 using Mosaic.Imaging;
 
 namespace Mosaic.Jobs {
-    [DebuggerDisplay("Name: {Name}, Constancy: {Constancy}, Score: {Score}")]
+    [DebuggerDisplay("Name: {Name}, Constancy: {_constancy}, Neighbourhood: {_neighbourhood}, Score: {Score}")]
     internal sealed class Frame {
         private readonly Image _image;
         private readonly IRectangle _rect;
         private readonly ColorHistogram _histogram;
+        private readonly FrameBorders _borders;
+        private double _rateContancy = 1d;
+        private double _rateNeighbourhood;
+        private double _constancy = 100d;
+        private double _neighbourhood = 100d;
 
         public Frame(Image image, IRectangle rect) {
             _image = image;
@@ -16,20 +22,51 @@ namespace Mosaic.Jobs {
 
             _histogram = new ColorHistogram(image.Reduced[rect]);
 
-            Borders = new FrameBorders(image, rect);
+            _borders = new FrameBorders(image, rect);
         }
 
         public string Name => _image.Name;
 
-        public FrameBorders Borders { get; }
-
-        public double Constancy { get; private set; }
-
-        public double Score => Constancy;
+        public double Score => _constancy * _rateContancy + _neighbourhood * _rateNeighbourhood;
 
         public void UpdateConstancy(IEnumerable<Frame> frames) {
-            Constancy = frames.Average(frame => this % frame);
+            _constancy = frames.Average(frame => this % frame);
+            UpdateRating(1d);
         }
+
+        public void UpdateNeighbourhood(Neighbours neighbours) {
+            _neighbourhood = new[] {
+                Calc(Direction.Left),
+                Calc(Direction.Right),
+                Calc(Direction.Top),
+                Calc(Direction.Bottom)
+            }.HarmonicAverage();
+
+            UpdateRating(0.1d);
+
+            double Calc(Direction direction) {
+                var neighbour = neighbours.GetByDirection(direction);
+                if (neighbour is null || neighbour.IsResolved == false) {
+                    return 100d;
+                }
+
+                var neighbourBorder = neighbour.SelectFrame._borders.GetByOppositeDirection(direction);
+                var frameBorder = _borders.GetByDirection(direction);
+
+                var result = neighbourBorder % frameBorder;
+                if (Name != neighbour.SelectFrame.Name) {
+                    return result;
+                }
+
+                return result * 1.0005d;
+            }
+        }
+
+        private void UpdateRating(double contancy) {
+            _rateContancy = contancy;
+            _rateNeighbourhood = 1d - _rateContancy;
+        }
+
 
         public static double operator %(Frame left, Frame right) {
             if (ReferenceEquals(left._image, right._image)) {
@@ -38,7 +75,7 @@ namespace Mosaic.Jobs {
 
             const double half = 0.5d;
             return left._histogram % right._histogram * half +
-                   right.Borders % right.Borders * half;
+                   right._borders % right._borders * half;
         }
 
         public void CopyTo(LayerResult result) {

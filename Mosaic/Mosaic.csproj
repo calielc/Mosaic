@@ -69,12 +69,15 @@
     <Reference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\CollectionExtensions.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Imaging\RGBColor.cs" />
     <Compile Include="Jobs\Cell.cs" />
     <Compile Include="Jobs\ColorHistogram.cs" />
     <Compile Include="Jobs\Frame.cs" />
     <Compile Include="Jobs\FrameBorder.cs" />
     <Compile Include="Jobs\FrameBorders.cs" />
+    <Compile Include="Jobs\Direction.cs" />
     <Compile Include="Jobs\LoaderActivity.cs" />
     <Compile Include="Jobs\Neighbours.cs" />
     <Compile Include="Jobs\PickerBot.cs" />
